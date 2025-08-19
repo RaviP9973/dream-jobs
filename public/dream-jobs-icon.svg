@@ -1,0 +1,15 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <circle cx="32" cy="32" r="32" fill="#3B82F6"/>
+  
+  <!-- Briefcase -->
+  <path d="M18 26H46C47.6569 26 49 27.3431 49 29V47C49 48.6569 47.6569 50 46 50H18C16.3431 50 15 48.6569 15 47V29C15 27.3431 16.3431 26 18 26Z" stroke="white" stroke-width="2" fill="none"/>
+  <path d="M25 26V23C25 21.3431 26.3431 20 28 20H36C37.6569 20 39 21.3431 39 23V26" stroke="white" stroke-width="2" fill="none"/>
+  <path d="M15 32H49" stroke="white" stroke-width="2"/>
+  
+  <!-- Star accent -->
+  <path d="M32 14L33.236 17.764L37.5 17L35.118 20.382L37.5 23.5L33.236 22.236L32 26L30.764 22.236L26.5 23.5L28.882 20.382L26.5 17L30.764 17.764L32 14Z" fill="#FBBF24"/>
+  
+  <!-- Handle detail -->
+  <rect x="30" y="34" width="4" height="8" rx="2" fill="white" opacity="0.7"/>
+</svg>
