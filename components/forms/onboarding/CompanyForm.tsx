@@ -11,6 +11,19 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { countryList } from "@/app/utils/countryList";
+import Image from "next/image";
+import { Textarea } from "@/components/ui/textarea";
+import { UploadDropzone } from "@/components/general/UploadThingReexported";
 
 export function CompanyForm() {
   const form = useForm<z.infer<typeof companySchema>>({
@@ -39,7 +52,7 @@ export function CompanyForm() {
                 <FormControl>
                   <Input placeholder="Enter company Name" {...field} />
                 </FormControl>
-                 <FormMessage />
+                <FormMessage />
               </FormItem>
             )}
           />
@@ -50,14 +63,112 @@ export function CompanyForm() {
               <FormItem>
                 <FormLabel>Company Location</FormLabel>
 
-                <FormControl>
-                  <Input placeholder="Enter company Location" {...field} />
-                </FormControl>
-                 <FormMessage />
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select location" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectGroup>
+                      <SelectLabel>Worldwide</SelectLabel>
+                      <SelectItem value="worldwide">
+                        <span>🌍</span>
+                        Worldwide / Remote
+                      </SelectItem>
+                    </SelectGroup>
+                    <SelectGroup>
+                      <SelectLabel>Location</SelectLabel>
+                      {countryList.map((country) => (
+                        <SelectItem key={country.code} value={country.name}>
+                          <Image
+                            src={country.image}
+                            alt={country.name}
+                            width={20}
+                            height={20}
+                          />
+                          <span className="pl-2">{country.name}</span>
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
               </FormItem>
             )}
           />
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField
+            control={form.control}
+            name="website"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Website</FormLabel>
+
+                <FormControl>
+                  <Input placeholder="https://yourcompany.com" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="xAccount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>X(Twitter) Account</FormLabel>
+
+                <FormControl>
+                  <Input placeholder="@yourcompany" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="about"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>About</FormLabel>
+
+              <FormControl>
+                <Textarea placeholder="Tell us about your company" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="logo"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company Logo</FormLabel>
+
+              <FormControl>
+                <UploadDropzone endpoint="imageUploader" onClientUploadComplete={(res) => {
+                  field.onChange(res?.[0]?.url ?? "");
+                }}
+                onUploadError={(error) => {
+                  console.error("Upload failed",error);
+                }} 
+                className="ut-button:bg-primary ut-button:text-white ut-button:hover:bg-primary/90 ut-label:text-muted-foreground ut-allowed-content:text-muted-foreground border-primary"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
       </form>
     </Form>
   );
