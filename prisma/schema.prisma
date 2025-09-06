@@ -15,11 +15,51 @@ model User {
   image         String?
   accounts      Account[]
   sessions      Session[]
- 
+
+  userType userType?
+  onboardingComplete Boolean @default(false)
+
+  Company      Company?
+  Jobseeker    Jobseeker?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
  
+enum userType{
+  COMPANY
+  JOBSEEKER
+}
+
+model Company {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String 
+  about String?
+  location String
+  website String
+  xAccount String?
+  logo String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.ObjectId @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+
+}
+
+model Jobseeker {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+  name String
+  about String
+  resume String
+
+  user User @relation(fields: [id], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   userId            String  @db.ObjectId

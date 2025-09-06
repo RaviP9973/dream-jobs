@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Building2, UserRound } from "lucide-react";
 
-type UserSelectionType = 'company' | 'candidate' ;
+type UserSelectionType = 'company' | 'jobseeker';
 
 interface UserTypeFormProps {
   onSelect: (type: UserSelectionType) => void;
@@ -30,7 +30,7 @@ export default function UserSelectionForm({onSelect}: UserTypeFormProps) {
         </div>
         </Button>
         <Button 
-        onClick={() => onSelect("candidate")}
+        onClick={() => onSelect("jobseeker")}
         variant={"outline"}  className="w-full h-auto p-6 items-center gap-4 border-2  transition-all duration-200 hover:!border-primary hover:!bg-primary/5">
             <div className="size-12 rounded-full bg-primary/10  flex items-center justify-center">
 

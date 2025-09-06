@@ -21,3 +21,10 @@ export const companySchema = z.object({
     .string()
     .optional(),
 });
+
+export const jobseekerSchema = z.object({
+  name: z.string().min(2, "name must be at least 2 characters long"),
+  about: z.string().min(10, "Please provide some information about yourself"),
+  resume: z.string().min(1, "Please provide a resume"),
+  
+})
