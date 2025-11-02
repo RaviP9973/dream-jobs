@@ -1,49 +1,79 @@
-"use server"
+"use server";
 
-import {z} from "zod";
-import { requireUser } from "./utils/requireUser"
+import { z } from "zod";
+import { requireUser } from "./utils/requireUser";
 import { companySchema, jobseekerSchema } from "./utils/zodSchemas";
 import { prisma } from "./utils/db";
 import { redirect } from "next/navigation";
+import arcjet, { detectBot, shield } from "./utils/arcjet";
+import { request } from "@arcjet/next";
+
+const aj = arcjet
+    .withRule(
+    shield({
+        mode: "LIVE",
+    })
+    )
+    .withRule(
+        detectBot({
+            mode: "LIVE",
+            allow: [],
+        })
+    )
 
 export async function createCompany(data: z.infer<typeof companySchema>) {
-    const session = await requireUser();
+  const session = await requireUser();
 
-    const validateData = companySchema.parse(data);
+  const req = await request()
 
-    await prisma.user.update({
-        where: {id: session.id},
-        data: {
-            onboardingComplete: true,
-            userType: "COMPANY",
-            Company: {
-                create: {
-                    ...validateData
-                }
-            }
-        }
-    })
+  const decision = await aj.protect(req);
 
-    return redirect('/');
+  if(decision.isDenied()){
+    throw new Error("Request denied by Arcjet");
+  }
+  const validateData = companySchema.parse(data);
+
+  await prisma.user.update({
+    where: { id: session.id },
+    data: {
+      onboardingComplete: true,
+      userType: "COMPANY",
+      Company: {
+        create: {
+          ...validateData,
+        },
+      },
+    },
+  });
+
+  return redirect("/");
 }
 
-export async function createJobSeeker(data : z.infer<typeof jobseekerSchema>) {
-    const user = await requireUser();
+export async function createJobSeeker(data: z.infer<typeof jobseekerSchema>) {
+  const user = await requireUser();
 
-    const validateData = jobseekerSchema.parse(data);
+  const req = await request();
 
-    await prisma.user.update({
-        where: {id: user.id},
-        data: {
-            onboardingComplete: true,
-            userType: "JOBSEEKER",
-            Jobseeker: {
-                create: {
-                    ...validateData
-                }
-            }
-        }
-    })
+  const decision = await aj.protect(req);
 
-    return redirect('/');
+  if (decision.isDenied()) {
+    throw new Error("Request denied by Arcjet");
+  }
+
+  const validateData = jobseekerSchema.parse(data);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      onboardingComplete: true,
+      userType: "JOBSEEKER",
+      Jobseeker: {
+        create: {
+          ...validateData,
+        },
+      },
+    },
+  });
+
+  return redirect("/");
 }

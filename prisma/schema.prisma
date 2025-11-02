@@ -40,6 +40,8 @@ model Company {
   xAccount String?
   logo String?
 
+  JobPost JobPost[]
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId String @db.ObjectId @unique
 
@@ -102,3 +104,31 @@ model VerificationToken {
   @@unique([identifier, token])
 }
  
+model JobPost {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+
+  jobTitle String
+  employmentType String
+  location String
+  salaryFrom Int
+  salaryTo Int
+  jobDescription String
+  listingDuration Int
+  benefits String[]
+
+  status JobPostStatus @default(DRAFT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  Company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String @db.ObjectId
+
+}
+
+enum JobPostStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+}
