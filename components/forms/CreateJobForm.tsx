@@ -32,19 +32,27 @@ import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 import { XIcon } from "lucide-react";
 import { UploadDropzone } from "../general/UploadThingReexported";
+import { JobListingDurationSelector } from "../general/JobListingDurationSelector";
 
+interface iAppProps {
+  companyName: string | null;
+  companyAbout: string | null;
+  companyWebsite: string | null;
+  companyXAccount: string | null;
+  companyLogo: string | null;
+}
 
-export function CreateJobForm() {
+export function CreateJobForm({ companyName, companyAbout, companyWebsite, companyXAccount, companyLogo }: iAppProps) {
   const form = useForm<z.infer<typeof jobSchema>>({
     resolver: zodResolver(jobSchema),
     defaultValues: {
       benefits: [],
-      companyAbout: "",
-      companyName: "",
+      companyAbout: companyAbout || "",
+      companyName: companyName || "",
       companyLocation: "",
-      companyWebsite: "",
-      companyLogo: "",
-      companyXAccount: "",
+      companyWebsite: companyWebsite || "",
+      companyLogo: companyLogo || "",
+      companyXAccount: companyXAccount || "",
       employmentType: "",
       jobDescription: "",
       jobTitle: "",
@@ -54,9 +62,17 @@ export function CreateJobForm() {
       salaryTo: 0,
     },
   });
+
+  async function onSubmit(values: z.infer<typeof jobSchema>) {
+    console.log("should work");
+  }
+
   return (
     <Form {...form}>
-      <form className="col-span-1 lg:col-span-2 flex flex-col gap-8">
+      <form
+        className="col-span-1 lg:col-span-2 flex flex-col gap-8"
+        onSubmit={form.handleSubmit(onSubmit)}
+      >
         <Card>
           <CardHeader>
             <CardTitle>Job Information</CardTitle>
@@ -159,25 +175,26 @@ export function CreateJobForm() {
               <FormItem>
                 <FormLabel>Salary Range </FormLabel>
                 <FormControl>
-                  <SalaryRangeSelector control={form.control}
-                  minSalary={10000}
-                  maxSalary={10000000}
-                  currency="INR"
-                  step={1000}
+                  <SalaryRangeSelector
+                    control={form.control}
+                    minSalary={10000}
+                    maxSalary={10000000}
+                    currency="INR"
+                    step={1000}
                   />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             </div>
 
-            <FormField 
+            <FormField
               control={form.control}
               name="jobDescription"
-              render={ ({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormLabel>Job Description</FormLabel>
                   <FormControl>
-                    <JobDescriptionEditor field={field as any}/>
+                    <JobDescriptionEditor field={field as any} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -187,16 +204,15 @@ export function CreateJobForm() {
             <FormField
               control={form.control}
               name="benefits"
-              render={({field}) => (
+              render={({ field }) => (
                 <FormItem>
                   <FormLabel>Benefits</FormLabel>
                   <FormControl>
-                    <BenefitsSelector field={field as any}/>
+                    <BenefitsSelector field={field as any} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
-              
             />
           </CardContent>
         </Card>
@@ -207,14 +223,14 @@ export function CreateJobForm() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols1 md:grid-cols-2 gap-6">
-              <FormField 
+              <FormField
                 control={form.control}
                 name="companyName"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Company Name</FormLabel>
                     <FormControl>
-                      <Input placeholder="company name..." {...field} /> 
+                      <Input placeholder="company name..." {...field} />
                     </FormControl>
                   </FormItem>
                 )}
@@ -266,99 +282,125 @@ export function CreateJobForm() {
                   </FormItem>
                 )}
               />
-              
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <FormField 
+              <FormField
                 control={form.control}
                 name="companyWebsite"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Company Website</FormLabel>
                     <FormControl>
-                      <Input placeholder="company website..." {...field} /> 
+                      <Input placeholder="company website..." {...field} />
                     </FormControl>
                   </FormItem>
                 )}
               />
-                <FormField 
+              <FormField
                 control={form.control}
                 name="companyXAccount"
-                render={({field}) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Company X Account</FormLabel>
                     <FormControl>
-                      <Input placeholder="company X Account" {...field} /> 
+                      <Input placeholder="company X Account" {...field} />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-
             </div>
-              <FormField 
-                control={form.control}
-                name="companyAbout"
-                render={({field}) => (
-                  <FormItem>
-                    <FormLabel>Company Description</FormLabel>
-                    <FormControl>
-                      <Textarea placeholder="Say something about your company" {...field} className="min-h-[120px]" /> 
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-
-                      <FormField
-          control={form.control}
-          name="companyLogo"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Company Logo</FormLabel>
-
-              <FormControl>
-                <div>
-                  {field.value ? (
-                    <div className="relative w-fit">
-                      <Image
-                        src={field.value}
-                        alt="Company Logo"
-                        width={100}
-                        height={100}
-                        className="rounded-lg"
-                      />
-
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        className="absolute -top-2 -right-2 p-1 rounded-full"
-                        size="icon"
-                        onClick={() => field.onChange("")}
-                      >
-                        <XIcon className="size-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <UploadDropzone
-                      endpoint="imageUploader"
-                      onClientUploadComplete={(res) => {
-                        field.onChange(res[0]?.url ?? "");
-                      }}
-                      onUploadError={(error) => {
-                        console.error("Upload failed", error);
-                      }}
-                      className="ut-button:bg-primary ut-button:text-white ut-button:hover:bg-primary/90 ut-label:text-muted-foreground ut-allowed-content:text-muted-foreground border-primary"
+            <FormField
+              control={form.control}
+              name="companyAbout"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Description</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder="Say something about your company"
+                      {...field}
+                      className="min-h-[120px]"
                     />
-                  )}
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="companyLogo"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company Logo</FormLabel>
+
+                  <FormControl>
+                    <div>
+                      {field.value ? (
+                        <div className="relative w-fit">
+                          <Image
+                            src={field.value}
+                            alt="Company Logo"
+                            width={100}
+                            height={100}
+                            className="rounded-lg"
+                          />
+
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            className="absolute -top-2 -right-2 p-1 rounded-full"
+                            size="icon"
+                            onClick={() => field.onChange("")}
+                          >
+                            <XIcon className="size-4" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <UploadDropzone
+                          endpoint="imageUploader"
+                          onClientUploadComplete={(res) => {
+                            field.onChange(res[0]?.url ?? "");
+                          }}
+                          onUploadError={(error) => {
+                            console.error("Upload failed", error);
+                          }}
+                          className="ut-button:bg-primary ut-button:text-white ut-button:hover:bg-primary/90 ut-label:text-muted-foreground ut-allowed-content:text-muted-foreground border-primary"
+                        />
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Job Listing Duration</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FormField
+              control={form.control}
+              name="listingDuration"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <JobListingDurationSelector field={field as any} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
+        <Button type="submit" className="w-full">
+          Post Job
+        </Button>
       </form>
     </Form>
   );
