@@ -9,6 +9,7 @@ import arcjet, { detectBot, shield } from "./utils/arcjet";
 import { request } from "@arcjet/next";
 import { stripe } from "./utils/stripe";
 import { jobListingDurationPricing } from "./utils/jobListingDurationPricing";
+import { inngest } from "./utils/inngest/client";
 
 const aj = arcjet
   .withRule(
@@ -146,7 +147,7 @@ export async function createJob(data: z.infer<typeof jobSchema>) {
     },
     select: {
       id: true,
-    }
+    },
   });
 
   const pricingTier = jobListingDurationPricing.find(
@@ -157,31 +158,33 @@ export async function createJob(data: z.infer<typeof jobSchema>) {
     throw new Error("Invalid listing duration selected");
   }
 
-const session = await stripe.checkout.sessions.create({
-  customer: stripeCustomerId,
-  line_items: [
-    {
-      price_data: {
-        currency: "USD",
-        unit_amount: pricingTier.price * 100, // in cents
-        product_data: {
-          name: `Job Posting - ${pricingTier.days} Days`,
-          description: pricingTier.description,
-          images: [
-            "https://kzfp0kl6r4.ufs.sh/f/QizcO0TRz5cPAN53b9LDc0gAC59epKda7mSiuFTMNXLxkjI1"
-          ]
-        }
+
+  const session = await stripe.checkout.sessions.create({
+    customer: stripeCustomerId,
+    line_items: [
+      {
+        price_data: {
+          currency: "USD",
+          unit_amount: pricingTier.price * 100, // in cents
+          product_data: {
+            name: `Job Posting - ${pricingTier.days} Days`,
+            description: pricingTier.description,
+            images: [
+              "https://kzfp0kl6r4.ufs.sh/f/QizcO0TRz5cPAN53b9LDc0gAC59epKda7mSiuFTMNXLxkjI1",
+            ],
+          },
+        },
+        quantity: 1,
       },
-      quantity: 1
-    }
-  ],
-  metadata: {
-    jobId: jobPost.id,
-  },
-  mode: "payment",
-  success_url: `${process.env.NEXT_PUBLIC_URL}/payment/success`,
-  cancel_url: `${process.env.NEXT_PUBLIC_URL}/payment/cancel`
-});
+    ],
+    metadata: {
+      jobId: jobPost.id,
+      expirationDays: validateData.listingDuration,
+    },
+    mode: "payment",
+    success_url: `${process.env.NEXT_PUBLIC_URL}/payment/success`,
+    cancel_url: `${process.env.NEXT_PUBLIC_URL}/payment/cancel`,
+  });
 
   return redirect(session.url as string);
 }
