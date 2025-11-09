@@ -4,6 +4,8 @@ import { jobSchema } from "@/app/utils/zodSchemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ControllerRenderProps, useForm } from "react-hook-form";
 import z from "zod";
+
+type JobSchemaType = z.infer<typeof jobSchema>;
 import {
   Form,
   FormControl,
@@ -33,6 +35,8 @@ import { Button } from "../ui/button";
 import { XIcon } from "lucide-react";
 import { UploadDropzone } from "../general/UploadThingReexported";
 import { JobListingDurationSelector } from "../general/JobListingDurationSelector";
+import { createJob } from "@/app/actions";
+import { useState } from "react";
 
 interface iAppProps {
   companyName: string | null;
@@ -43,8 +47,8 @@ interface iAppProps {
 }
 
 export function CreateJobForm({ companyName, companyAbout, companyWebsite, companyXAccount, companyLogo }: iAppProps) {
-  const form = useForm<z.infer<typeof jobSchema>>({
-    resolver: zodResolver(jobSchema),
+  const form = useForm<JobSchemaType>({
+    resolver: zodResolver(jobSchema) as any,
     defaultValues: {
       benefits: [],
       companyAbout: companyAbout || "",
@@ -63,8 +67,23 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
     },
   });
 
-  async function onSubmit(values: z.infer<typeof jobSchema>) {
-    console.log("should work");
+  const [pending,setPending] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  async function onSubmit(values: JobSchemaType) {
+    try {
+      setPending(true);
+      setSubmitError(null);
+      console.log("Submitting form with values:", values);
+      await createJob(values);
+    } catch (error) {
+      if(error instanceof Error && error.message !== "NEXT_REDIRECT") {
+        console.error("Something went wrong", error);
+        setSubmitError(error.message || "An error occurred while creating the job");
+      }
+    } finally{
+      setPending(false);
+    }
   }
 
   return (
@@ -176,7 +195,7 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
                 <FormLabel>Salary Range </FormLabel>
                 <FormControl>
                   <SalaryRangeSelector
-                    control={form.control}
+                    control={form.control as any}
                     minSalary={10000}
                     maxSalary={10000000}
                     currency="INR"
@@ -222,7 +241,7 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
             <CardTitle>Company Information </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <FormField
                 control={form.control}
                 name="companyName"
@@ -398,9 +417,15 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
           </CardContent>
         </Card>
 
-        <Button type="submit" className="w-full">
-          Post Job
+        <Button type="submit" className="w-full" disabled={pending}>
+          {pending ? "Submitting..." : "Create Job Post"}
         </Button>
+
+        {submitError && (
+          <div className="text-red-600 text-sm mt-2 p-3 bg-red-50 rounded-md border border-red-200">
+            {submitError}
+          </div>
+        )}
       </form>
     </Form>
   );

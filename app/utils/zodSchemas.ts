@@ -58,5 +58,5 @@ export const jobSchema = z.object({
 
   companyXAccount: z.string().optional(),
   
-  status: z.enum(["DRAFT", "ACTIVE", "EXPIRED"]),
+  status: z.enum(["DRAFT", "ACTIVE", "EXPIRED"]).optional().default("ACTIVE"),
 })
