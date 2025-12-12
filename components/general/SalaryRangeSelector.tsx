@@ -1,11 +1,10 @@
 import { Control, useController } from "react-hook-form";
 import { Slider } from "../ui/slider";
 import { useState } from "react";
-import { FormField } from "../ui/form";
 import { formatCurrency } from "@/app/utils/formatCurrency";
 
 interface iappProps {
-  control: Control<any>;
+  control: Control<{ salaryFrom: number; salaryTo: number }>;
   minSalary: number;
   maxSalary: number;
   step: number;
@@ -14,7 +13,6 @@ interface iappProps {
 
 export function SalaryRangeSelector({
   control,
-  currency,
   maxSalary,
   minSalary,
   step,

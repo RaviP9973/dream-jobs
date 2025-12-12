@@ -16,7 +16,6 @@ import {
   Heading3,
   Italic,
   ListIcon,
-  ListOrdered,
   ListOrderedIcon,
   Redo,
   Strikethrough,

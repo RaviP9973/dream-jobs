@@ -227,7 +227,7 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
                 <FormItem>
                   <FormLabel>Benefits</FormLabel>
                   <FormControl>
-                    <BenefitsSelector field={field as any} />
+                    <BenefitsSelector field={field as unknown as ControllerRenderProps} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -408,7 +408,7 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <JobListingDurationSelector field={field as any} />
+                    <JobListingDurationSelector field={field as unknown as ControllerRenderProps} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
