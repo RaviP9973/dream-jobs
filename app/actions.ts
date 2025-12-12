@@ -9,7 +9,6 @@ import arcjet, { detectBot, shield } from "./utils/arcjet";
 import { request } from "@arcjet/next";
 import { stripe } from "./utils/stripe";
 import { jobListingDurationPricing } from "./utils/jobListingDurationPricing";
-import { inngest } from "./utils/inngest/client";
 
 const aj = arcjet
   .withRule(

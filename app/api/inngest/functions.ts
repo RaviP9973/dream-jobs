@@ -44,14 +44,15 @@ export const sendPeriodicJobListing = inngest.createFunction(
   { id: "send-job-listings" },
   { event: "jobseeker/created" },
   async ({ event, step }) => {
-    const { userId, email } = event.data;
+    const { userId } = event.data;
+    const email = event.data.email;
 
     const totalDays = 30;
     const intervalDays = 2;
     let currentDay = 0;
 
     while (currentDay < totalDays) {
-      await step.sleep("wait-interval", `${1}m`);
+      await step.sleep("wait-interval", `${intervalDays}d`);
       currentDay += intervalDays;
       const recentJobs = await step.run("fetch-recent-jobs", async () => {
         return await prisma.jobPost.findMany({

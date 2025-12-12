@@ -48,6 +48,7 @@ interface iAppProps {
 
 export function CreateJobForm({ companyName, companyAbout, companyWebsite, companyXAccount, companyLogo }: iAppProps) {
   const form = useForm<JobSchemaType>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(jobSchema) as any,
     defaultValues: {
       benefits: [],
@@ -195,6 +196,7 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
                 <FormLabel>Salary Range </FormLabel>
                 <FormControl>
                   <SalaryRangeSelector
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     control={form.control as any}
                     minSalary={10000}
                     maxSalary={10000000}
@@ -213,6 +215,7 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
                 <FormItem>
                   <FormLabel>Job Description</FormLabel>
                   <FormControl>
+                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                     <JobDescriptionEditor field={field as any} />
                   </FormControl>
                   <FormMessage />
