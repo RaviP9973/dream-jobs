@@ -77,7 +77,7 @@ export const sendPeriodicJobListing = inngest.createFunction(
         await step.run("send-email", async () => {
           const jobListingHtml = recentJobs
             .map(
-              (job) =>
+              (job: typeof recentJobs[number]) =>
                 // html template for all these jobs
                 `
                 <div style="border: 1px solid #ddd; padding: 20px; margin-bottom: 15px; border-radius: 5px;">
