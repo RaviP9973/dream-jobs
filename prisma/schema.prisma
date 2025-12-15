@@ -1,61 +1,60 @@
 datasource db {
   provider = "mongodb"
-  url      = env("DATABASE_URL")
 }
- 
+
 generator client {
   provider = "prisma-client-js"
 }
- 
+
 model User {
-  id            String          @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
   name          String?
-  email         String?         @unique
+  email         String?   @unique
   emailVerified DateTime?
   image         String?
   accounts      Account[]
   sessions      Session[]
 
-  stripeCustomerId String? @unique
-  userType userType?
-  onboardingComplete Boolean @default(false)
+  stripeCustomerId   String?   @unique
+  userType           userType?
+  onboardingComplete Boolean   @default(false)
 
-  Company      Company?
-  Jobseeker    Jobseeker?
+  Company   Company?
+  Jobseeker Jobseeker?
+
+  SavedJobPost SavedJobPost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
- 
-enum userType{
+
+enum userType {
   COMPANY
   JOBSEEKER
 }
 
 model Company {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  name String 
-  about String?
+  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  name     String
+  about    String?
   location String
-  website String
+  website  String
   xAccount String?
-  logo String?
+  logo     String?
 
   JobPost JobPost[]
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @db.ObjectId @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @db.ObjectId
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-
 }
 
 model Jobseeker {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
-  name String
-  about String
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  name   String
+  about  String
   resume String
 
   user User @relation(fields: [id], references: [id], onDelete: Cascade)
@@ -63,6 +62,7 @@ model Jobseeker {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
 model Account {
   id                String  @id @default(auto()) @map("_id") @db.ObjectId
   userId            String  @db.ObjectId
@@ -76,60 +76,75 @@ model Account {
   scope             String?
   id_token          String? @db.String
   session_state     String?
- 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
- 
+
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+
   @@unique([provider, providerAccountId])
 }
- 
+
 model Session {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   sessionToken String   @unique
   userId       String   @db.ObjectId
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
- 
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
- 
+
 model VerificationToken {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   identifier String
   token      String
   expires    DateTime
- 
+
   @@unique([identifier, token])
 }
- 
+
 model JobPost {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
-
-  jobTitle String
-  employmentType String
-  location String
-  salaryFrom Int
-  salaryTo Int
-  jobDescription String
+  jobTitle        String
+  employmentType  String
+  location        String
+  salaryFrom      Int
+  salaryTo        Int
+  jobDescription  String
   listingDuration Int
-  benefits String[]
-
+  benefits        String[]
+  application     Int @default(0)
   status JobPostStatus @default(DRAFT)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  Company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String @db.ObjectId
+  Company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId String  @db.ObjectId
 
+  SavedJobPost SavedJobPost[]
 }
 
 enum JobPostStatus {
   DRAFT
   ACTIVE
   EXPIRED
+}
+
+model SavedJobPost {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.ObjectId
+
+  jobPost   JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
+  jobPostId String  @db.ObjectId
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, jobPostId])
 }
