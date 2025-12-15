@@ -3,8 +3,34 @@ import { prisma } from "@/app/utils/db";
 import { requireUser } from "@/app/utils/requireUser";
 import { EmptyState } from "@/components/general/EmptyState";
 import { JobCard } from "@/components/general/JobCard";
+import type { Prisma } from "@prisma/client";
 
-async function getFevorites(userId: string) {
+type Favorite = Prisma.SavedJobPostGetPayload<{
+  select: {
+    jobPost: {
+      select: {
+        id: true;
+        jobTitle: true;
+        location: true;
+        employmentType: true;
+        createdAt: true;
+        salaryFrom: true;
+        salaryTo: true;
+        Company: {
+          select: {
+            name: true;
+            logo: true;
+            location: true;
+            about: true;
+          };
+        };
+      };
+    };
+  };
+}>;
+
+
+async function getFevorites(userId: string): Promise<Favorite[]> {
   const data = await prisma.savedJobPost.findMany({
     where: {
       userId: userId,

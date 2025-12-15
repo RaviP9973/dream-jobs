@@ -1,7 +1,6 @@
 import { prisma } from "@/app/utils/db";
 import { requireUser } from "@/app/utils/requireUser";
 import { EditJobForm } from "@/components/forms/onboarding/EditJobForm";
-import { notDeepEqual } from "assert";
 import { notFound } from "next/navigation";
 
 async function getData(jobId: string, userId: string) {
