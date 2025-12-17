@@ -51,7 +51,7 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
     resolver: zodResolver(jobFormSchema),
     defaultValues: {
       benefits: [],
-      companyAbout: companyAbout || "",
+      companyDescription: companyAbout || "",
       companyName: companyName || "",
       companyLocation: "",
       companyWebsite: companyWebsite || "",
@@ -334,7 +334,7 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
             </div>
             <FormField
               control={form.control}
-              name="companyAbout"
+              name="companyDescription"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Company Description</FormLabel>
