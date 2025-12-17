@@ -2,7 +2,7 @@
 
 import { createJob, editJobPost } from "@/app/actions";
 import { countryList } from "@/app/utils/countryList";
-import { jobSchema } from "@/app/utils/zodSchemas";
+import { jobFormSchema } from "@/app/utils/zodSchemas";
 import { BenefitsSelector } from "@/components/general/BenefitsSelector";
 import { SalaryRangeSelector } from "@/components/general/SalaryRangeSelector";
 import { UploadDropzone } from "@/components/general/UploadThingReexported";
@@ -46,14 +46,14 @@ interface iAppProps {
 
 export function EditJobForm({ jobPost }: iAppProps) {
 
-    type JobSchemaType = z.infer<typeof jobSchema>;
+    type JobSchemaType = z.infer<typeof jobFormSchema>;
 
       const form = useForm<JobSchemaType>({
-        resolver: zodResolver(jobSchema) as any,
+        resolver: zodResolver(jobFormSchema),
         defaultValues: {
           benefits: jobPost?.benefits,
-          companyAbout: jobPost?.Company.about || "",
           companyName: jobPost?.Company.name,
+          companyDescription: jobPost?.Company.about || "",
           companyLocation: jobPost?.Company.location,
           companyWebsite: jobPost?.Company.website,
           companyLogo: jobPost?.Company.logo || "",
@@ -76,7 +76,7 @@ export function EditJobForm({ jobPost }: iAppProps) {
             setPending(true);
             setSubmitError(null);
             
-            await editJobPost(values, jobPost.id);
+            await editJobPost({ ...values, status: "ACTIVE" }, jobPost.id);
           } catch (error) {
             if(error instanceof Error && error.message !== "NEXT_REDIRECT") {
               console.error("Something went wrong", error);
@@ -335,7 +335,7 @@ export function EditJobForm({ jobPost }: iAppProps) {
             </div>
             <FormField
               control={form.control}
-              name="companyAbout"
+              name="companyDescription"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Company Description</FormLabel>

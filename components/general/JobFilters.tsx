@@ -19,7 +19,6 @@ import { countryList } from "@/app/utils/countryList";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useTransition } from "react";
-import { start } from "repl";
 
 const jobTypes = ["full-time", "part-time", "contract", "internship"];
 
@@ -31,7 +30,7 @@ export function JobFilter() {
 
   const currentLocation = searchParams.get("location") || "";
 
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   function clearAllFilters() {
     startTransition(() => {

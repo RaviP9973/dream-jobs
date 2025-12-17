@@ -1,11 +1,11 @@
 "use client";
 
-import { jobSchema } from "@/app/utils/zodSchemas";
+import { jobFormSchema } from "@/app/utils/zodSchemas";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ControllerRenderProps, useForm } from "react-hook-form";
 import z from "zod";
 
-type JobSchemaType = z.infer<typeof jobSchema>;
+type JobSchemaType = z.infer<typeof jobFormSchema>;
 import {
   Form,
   FormControl,
@@ -48,8 +48,7 @@ interface iAppProps {
 
 export function CreateJobForm({ companyName, companyAbout, companyWebsite, companyXAccount, companyLogo }: iAppProps) {
   const form = useForm<JobSchemaType>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(jobSchema) as any,
+    resolver: zodResolver(jobFormSchema),
     defaultValues: {
       benefits: [],
       companyAbout: companyAbout || "",
@@ -76,7 +75,7 @@ export function CreateJobForm({ companyName, companyAbout, companyWebsite, compa
       setPending(true);
       setSubmitError(null);
       console.log("Submitting form with values:", values);
-      await createJob(values);
+      await createJob({ ...values, status: "ACTIVE" });
     } catch (error) {
       if(error instanceof Error && error.message !== "NEXT_REDIRECT") {
         console.error("Something went wrong", error);

@@ -29,7 +29,7 @@ export const jobseekerSchema = z.object({
   
 })
 
-export const jobSchema = z.object({
+const jobSchemaBase = z.object({
   jobTitle: z.string().min(2, "Job title must be at least 2 characters long"),
 
   employmentType: z.string().min(1, "Employment type must be at least 1 character long"),
@@ -43,20 +43,24 @@ export const jobSchema = z.object({
   jobDescription: z.string().min(10, "Job description must be at least 10 characters long"),
 
   listingDuration: z.number().min(1, "Listing duration must be at least 1 day"),
-
   benefits: z.array(z.string().min(2, "Benefit must be at least 2 characters long")),
 
   companyName: z.string().min(1,"Company name is required"),
 
   companyLocation: z.string().min(1,"Company location is required"),
   
-  companyAbout: z.string().min(10,"Please provide some information about your company"),
 
   companyLogo: z.string().min(1,"Please provide a logo URL"),
 
   companyWebsite: z.string().min(1,"Company website is required"),
 
   companyXAccount: z.string().optional(),
-  
-  status: z.enum(["DRAFT", "ACTIVE", "EXPIRED"]).optional().default("ACTIVE"),
+
+  companyDescription: z.string().min(1, "Company description is required"),
+});
+
+export const jobFormSchema = jobSchemaBase;
+
+export const jobSchema = jobSchemaBase.extend({
+  status: z.enum(["DRAFT", "ACTIVE", "EXPIRED"]).default("ACTIVE"),
 })

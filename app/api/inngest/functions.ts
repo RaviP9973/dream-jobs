@@ -48,7 +48,6 @@ export const sendPeriodicJobListing = inngest.createFunction(
   { event: "jobseeker/created" },
   async ({ event, step }) => {
     const { userId } = event.data;
-    const email = event.data.email;
 
     const totalDays = 30;
     const intervalDays = 2;
