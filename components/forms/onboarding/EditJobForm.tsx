@@ -1,10 +1,9 @@
 "use client";
 
-import { createJob } from "@/app/actions";
+import { createJob, editJobPost } from "@/app/actions";
 import { countryList } from "@/app/utils/countryList";
 import { jobSchema } from "@/app/utils/zodSchemas";
 import { BenefitsSelector } from "@/components/general/BenefitsSelector";
-import { JobListingDurationSelector } from "@/components/general/JobListingDurationSelector";
 import { SalaryRangeSelector } from "@/components/general/SalaryRangeSelector";
 import { UploadDropzone } from "@/components/general/UploadThingReexported";
 import { JobDescriptionEditor } from "@/components/richTextEditor/JobDescriptionEditor";
@@ -50,7 +49,6 @@ export function EditJobForm({ jobPost }: iAppProps) {
     type JobSchemaType = z.infer<typeof jobSchema>;
 
       const form = useForm<JobSchemaType>({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         resolver: zodResolver(jobSchema) as any,
         defaultValues: {
           benefits: jobPost?.benefits,
@@ -77,8 +75,8 @@ export function EditJobForm({ jobPost }: iAppProps) {
           try {
             setPending(true);
             setSubmitError(null);
-            console.log("Submitting form with values:", values);
-            await createJob(values);
+            
+            await editJobPost(values, jobPost.id);
           } catch (error) {
             if(error instanceof Error && error.message !== "NEXT_REDIRECT") {
               console.error("Something went wrong", error);
@@ -405,7 +403,7 @@ export function EditJobForm({ jobPost }: iAppProps) {
         
 
         <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Submitting..." : "Create Job Post"}
+          {pending ? "Submitting..." : "Edit Job Post"}
         </Button>
 
         {submitError && (

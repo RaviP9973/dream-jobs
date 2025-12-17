@@ -11,6 +11,7 @@ import { stripe } from "./utils/stripe";
 import { jobListingDurationPricing } from "./utils/jobListingDurationPricing";
 import { th } from "zod/v4/locales";
 import { revalidatePath } from "next/cache";
+import { inngest } from "./utils/inngest/client";
 
 const aj = arcjet
   .withRule(
@@ -151,6 +152,14 @@ export async function createJob(data: z.infer<typeof jobSchema>) {
     },
   });
 
+  await inngest.send({
+    name: "job/created",
+    data: {
+      jobId: jobPost.id,
+      expirationDays: validateData.listingDuration,
+    },
+  });
+
   const pricingTier = jobListingDurationPricing.find(
     (tier) => tier.days === validateData.listingDuration
   );
@@ -233,3 +242,64 @@ export async function unsaveJobPost(savedJobPostId: string) {
   revalidatePath(`/job/${data.jobPostId}`);
 }
 
+export async function editJobPost(data: z.infer<typeof jobSchema>, jobId: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+  const validateData = jobSchema.parse(data);
+
+  if(decision.isDenied()){
+    throw new Error("Forbidden");
+  }
+
+  await prisma.jobPost.update( {
+    where: {
+      id: jobId,
+      Company: {
+        userId: user.id,
+      }
+    },
+    data: {
+      jobDescription: validateData.jobDescription,
+      jobTitle: validateData.jobTitle,
+      location: validateData.location,
+      salaryFrom: validateData.salaryFrom,
+      salaryTo: validateData.salaryTo,
+      employmentType: validateData.employmentType,
+      listingDuration: validateData.listingDuration,
+      benefits: validateData.benefits,
+
+    }
+  })
+
+  return redirect("/my-jobs");
+}
+
+export async function deleteJobPost(jobId: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+  if(decision.isDenied()){
+    throw new Error("Forbidden");
+  }
+
+  await prisma.jobPost.delete( {
+    where: {
+      id: jobId,
+      Company: {
+        userId: user.id,
+      }
+    }
+  })
+
+  await inngest.send( {
+    name: "job/cancel.expiration",
+    data: {
+      jobId: jobId,
+    }
+  })
+
+  return redirect("/my-jobs");
+}
