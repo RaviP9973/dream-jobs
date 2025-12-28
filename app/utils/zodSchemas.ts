@@ -64,3 +64,8 @@ export const jobFormSchema = jobSchemaBase;
 export const jobSchema = jobSchemaBase.extend({
   status: z.enum(["DRAFT", "ACTIVE", "EXPIRED"]).default("ACTIVE"),
 })
+
+export const applicationSchema = z.object({
+    resume : z.string().min(1, "Resume URL is required"),
+    jobPostId : z.string().min(1, "Job Post ID is required"),
+})

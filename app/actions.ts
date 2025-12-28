@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 import { requireUser } from "./utils/requireUser";
-import { companySchema, jobSchema, jobseekerSchema } from "./utils/zodSchemas";
+import { companySchema, jobSchema, jobseekerSchema, applicationSchema } from "./utils/zodSchemas";
 import { prisma } from "./utils/db";
 import { redirect } from "next/navigation";
 import arcjet, { detectBot, shield } from "./utils/arcjet";
@@ -273,6 +273,90 @@ export async function editJobPost(data: z.infer<typeof jobSchema>, jobId: string
   })
 
   return redirect("/my-jobs");
+}
+
+export async function updateJobseekerResume(resumeUrl: string, oldResumeUrl?: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Forbidden");
+  }
+
+  // Update the jobseeker's resume
+  await prisma.jobseeker.update({
+    where: {
+      userId: user.id,
+    },
+    data: {
+      resume: resumeUrl,
+    },
+  });
+
+  // If there was an old resume, you might want to delete it from uploadthing
+  // This would require additional implementation with uploadthing's deleteFiles API
+
+  revalidatePath("/");
+}
+
+export async function applyToJob(data: z.infer<typeof applicationSchema>) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Forbidden");
+  }
+
+  const validateData = applicationSchema.parse(data);
+
+  if (!validateData.jobPostId) {
+    throw new Error("Job post ID is required");
+  }
+
+  if (!validateData.resume) {
+    throw new Error("Please upload a resume before applying");
+  }
+
+  // Check if already applied
+  const existingApplication = await prisma.jobApplication.findUnique({
+    where: {
+      userId_jobPostId: {
+        userId: user.id as string,
+        jobPostId: validateData.jobPostId,
+      },
+    },
+  });
+
+  if (existingApplication) {
+    throw new Error("You have already applied to this job");
+  }
+
+  // Create the job application
+  await prisma.jobApplication.create({
+    data: {
+      userId: user.id as string,
+      jobPostId: validateData.jobPostId,
+      resume: validateData.resume,
+    },
+  });
+
+  // Increment application count on job post
+  await prisma.jobPost.update({
+    where: {
+      id: validateData.jobPostId,
+    },
+    data: {
+      application: {
+        increment: 1,
+      },
+    },
+  });
+
+  revalidatePath(`/job/${validateData.jobPostId}`);
 }
 
 export async function deleteJobPost(jobId: string) {

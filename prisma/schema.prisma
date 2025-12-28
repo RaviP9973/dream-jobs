@@ -24,6 +24,8 @@ model User {
   Jobseeker Jobseeker?
 
   SavedJobPost SavedJobPost[]
+  JobApplications JobApplication[]
+
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -58,8 +60,8 @@ model Jobseeker {
   about  String
   resume String
 
-  user User @relation(fields: [id], references: [id], onDelete: Cascade)
-
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @db.ObjectId
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -127,6 +129,7 @@ model JobPost {
   companyId String  @db.ObjectId
 
   SavedJobPost SavedJobPost[]
+  JobApplication JobApplication[]
 }
 
 enum JobPostStatus {
@@ -148,4 +151,33 @@ model SavedJobPost {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, jobPostId])
+}
+
+
+//create the jobApplication model
+
+model JobApplication {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.ObjectId
+
+  JobPost   JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
+  jobPostId String  @db.ObjectId
+
+  resume      String
+  status      ApplicationStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, jobPostId])
+}
+
+enum ApplicationStatus {
+  PENDING
+  IN_REVIEW
+  INTERVIEW
+  OFFER
+  REJECTED
 }

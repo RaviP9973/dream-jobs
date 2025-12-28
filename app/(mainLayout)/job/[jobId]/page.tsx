@@ -7,6 +7,7 @@ import arcjet, {
 import { auth } from "@/app/utils/auth";
 import { getFlagImage } from "@/app/utils/countryList";
 import { prisma } from "@/app/utils/db";
+import { formatCurrency } from "@/app/utils/formatCurrency";
 import { benefits } from "@/app/utils/listOfBenefits";
 import { JsonToHtml } from "@/components/general/JsonToHtml";
 import { SaveJobButton } from "@/components/general/SubmitButton";
@@ -19,6 +20,7 @@ import { Heart } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ResumeUploadSection } from "@/components/general/ResumeUploadSection";
 
 const aj = arcjet.withRule(
   detectBot({
@@ -50,7 +52,8 @@ function getClient(session: boolean) {
 }
 
 async function getJob(jobId: string, userId?: string) {
-  const [jobData, savedJob] = await Promise.all([
+  console.log("userId", userId);
+  const [jobData, savedJob, jobseeker] = await Promise.all([
     await prisma.jobPost.findUnique({
       where: {
         status: "ACTIVE",
@@ -64,6 +67,8 @@ async function getJob(jobId: string, userId?: string) {
         benefits: true,
         createdAt: true,
         listingDuration: true,
+        salaryFrom: true,
+        salaryTo: true,
         Company: {
           select: {
             name: true,
@@ -88,11 +93,23 @@ async function getJob(jobId: string, userId?: string) {
           },
         })
       : null,
+
+    userId
+      ? prisma.jobseeker.findUnique({
+          where: { userId: userId },
+          select: {
+            id: true,
+            about: true,
+            resume: true,
+            name: true,
+          },
+        })
+      : null,
   ]);
 
   if (!jobData) return notFound();
 
-  return {jobData, savedJob};
+  return { jobData, savedJob, jobseeker };
 }
 
 type Params = Promise<{ jobId: string; userID?: string }>;
@@ -107,7 +124,11 @@ export default async function jobIdPage({ params }: { params: Params }) {
     throw new Error("Forbidden");
   }
 
-  const {jobData:data,savedJob} = await getJob(jobId,session?.user?.id);
+  const {
+    jobData: data,
+    savedJob,
+    jobseeker,
+  } = await getJob(jobId, session?.user?.id);
 
   const locationFlag = getFlagImage(data.location);
   return (
@@ -141,18 +162,23 @@ export default async function jobIdPage({ params }: { params: Params }) {
                 )}
                 {data?.location}
               </Badge>
+              <span className="hidden md:inline text-muted-foreground">*</span>
+
+              <p className="text-sm text-muted-foreground">
+                {formatCurrency(data.salaryFrom)} -{" "}
+                {formatCurrency(data.salaryTo)}
+              </p>
             </div>
           </div>
 
-          {/* <Button variant={"outline"}>
-            <Heart className="size-4" />
-            Save Job
-          </Button> */}
-
           {session?.user ? (
-            <form action={
-              savedJob ? unsaveJobPost.bind(null,savedJob.id) : saveJobPost.bind(null,jobId)
-            }>
+            <form
+              action={
+                savedJob
+                  ? unsaveJobPost.bind(null, savedJob.id)
+                  : saveJobPost.bind(null, jobId)
+              }
+            >
               <SaveJobButton savedJob={!!savedJob} />
             </form>
           ) : (
@@ -213,7 +239,21 @@ export default async function jobIdPage({ params }: { params: Params }) {
               </p>
             </div>
 
-            <Button className="w-full">Apply now</Button>
+            {/* Jobseeker Details & Resume */}
+            {session?.user && jobseeker && (
+              <ResumeUploadSection
+                currentResume={jobseeker.resume}
+                jobseekerName={jobseeker.name || ""}
+                userEmail={session.user.email || ""}
+                jobId={jobId}
+              />
+            )}
+
+            {!session?.user && (
+              <Link href="/login" className="block">
+                <Button className="w-full">Apply now</Button>
+              </Link>
+            )}
           </div>
         </Card>
         {/* job details card */}

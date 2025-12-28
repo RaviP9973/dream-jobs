@@ -85,7 +85,7 @@ async function getCompany(userId: string) {
 }
 
 export default async function PostJobPage() {
-
+  
   const session = await requireUser();
   const data = await getCompany(session.id as string);
 
