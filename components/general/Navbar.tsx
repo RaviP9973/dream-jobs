@@ -9,8 +9,8 @@ export async function Navbar() {
   const session = await auth();
 
   return (
-    <nav className="flex items-center justify-between py-5">
-      <Link href="/" className="flex items-center justify-between py-5 ">
+    <nav className="flex items-center justify-between py-1 border-b mb-2 px-8">
+      <Link href="/" className="flex items-center justify-between py-2  ">
         <Image src={Logo} alt="Logo" width={40} height={40} />
         <h1 className="text-2xl font-bold ">
           Dream<span className="text-primary">Jobs</span>
