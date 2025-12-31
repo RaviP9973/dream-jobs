@@ -165,6 +165,9 @@ model JobApplication {
   JobPost   JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
   jobPostId String  @db.ObjectId
 
+  // jobSeeker Jobseeker @relation(fields: [jobSeekerId], references: [id], onDelete: Cascade)
+  // jobSeekerId String @db.ObjectId
+
   resume      String
   status      ApplicationStatus @default(PENDING)
 

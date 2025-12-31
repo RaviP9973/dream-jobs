@@ -15,8 +15,6 @@ import Link from "next/link";
 type Params = Promise<{ "job-id": string }>;
 export default async function DeleteJob({ params }: { params: Params }) {
   const { "job-id": jobId } = await params;
-
-  console.log("Job ID:", jobId);
   await requireUser();
   return (
     <div>

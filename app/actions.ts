@@ -11,6 +11,7 @@ import { stripe } from "./utils/stripe";
 import { jobListingDurationPricing } from "./utils/jobListingDurationPricing";
 import { revalidatePath } from "next/cache";
 import { inngest } from "./utils/inngest/client";
+import { ApplicationStatus } from "@prisma/client";
 
 const aj = arcjet
   .withRule(
@@ -385,4 +386,48 @@ export async function deleteJobPost(jobId: string) {
   })
 
   return redirect("/my-jobs");
+}
+
+export async function markApplicationAsReviewed(applicationId: string, status: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Forbidden");
+  }
+
+  // Update the application status to IN_REVIEW
+  await prisma.jobApplication.update({
+    where: {
+      id: applicationId,
+    },
+    data: {
+      status: "IN_REVIEW",
+    },
+  });
+
+  revalidatePath("/my-jobs");
+}
+
+
+export async function updateApplicationStatus(
+  applicationId: string, 
+  newStatus: ApplicationStatus,
+  jobId: string
+) {
+  try {
+    await prisma.jobApplication.update({
+      where: { id: applicationId },
+      data: { status: newStatus },
+    });
+
+    // Refresh the page data without a full reload
+    revalidatePath(`/dashboard/jobs/${jobId}/applications`);
+    
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Failed to update status" };
+  }
 }

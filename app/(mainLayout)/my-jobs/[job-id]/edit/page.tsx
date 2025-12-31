@@ -42,7 +42,9 @@ async function getData(jobId: string, userId: string) {
     return data;
 }
 
-type Params = Promise<{ "job-id": string }>;export default async function EditJob({params} : { params: Params }) {
+type Params = Promise<{ "job-id": string }>;
+
+export default async function EditJob({params} : { params: Params }) {
     const {"job-id": jobId} = await params;
 
     const user = await requireUser();

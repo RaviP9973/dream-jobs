@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
         hostname: "utfs.io",
         port: "",
         protocol: "https",
+      },
+      {
+        protocol: "https",
+        hostname: "**.googleusercontent.com", 
       }
     ]
   }

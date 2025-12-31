@@ -129,6 +129,12 @@ export default async function MyJobsPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Actions</DropdownMenuLabel>
                       <DropdownMenuItem asChild>
+                        <Link href={`/my-jobs/${listing.id}/applications`}>
+                          <PenBoxIcon />
+                            see applications
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
                         <Link href={`/my-jobs/${listing.id}/edit`}>
                           <PenBoxIcon />
                           Edit job
