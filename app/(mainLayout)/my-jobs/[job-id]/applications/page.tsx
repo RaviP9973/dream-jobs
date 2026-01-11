@@ -1,5 +1,6 @@
 // import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { 
   FileText, 
   MoreHorizontal, 
@@ -121,11 +122,14 @@ export default async function JobApplicationsPage({
                   {new Date(app.createdAt).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
-                  <a href={app.resume} target="_blank" rel="noopener noreferrer">
+                  <Link 
+                    href={`/resume/${app.id}?url=${encodeURIComponent(app.resume)}`}
+                    scroll={false}
+                  >
                     <Button variant="outline" size="sm" className="gap-2">
                       <FileText className="w-4 h-4" /> View Resume
                     </Button>
-                  </a>
+                  </Link>
                 </TableCell>
                 <TableCell className="text-right">
                   <DropdownMenu>
