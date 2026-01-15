@@ -415,13 +415,26 @@ export async function markApplicationAsReviewed(applicationId: string, status: s
 export async function updateApplicationStatus(
   applicationId: string, 
   newStatus: ApplicationStatus,
-  jobId: string
+  jobId: string,
+  jobTitle: string,
+  emailId: string
 ) {
   try {
     await prisma.jobApplication.update({
       where: { id: applicationId },
       data: { status: newStatus },
     });
+
+    // send email notification to applicant about status change
+    await inngest.send( {
+      name: "application/status.updated",
+      data: {
+        applicationId,
+        newStatus,
+        title: jobTitle,
+        emailId: emailId,
+      }
+    })
 
     // Refresh the page data without a full reload
     revalidatePath(`/dashboard/jobs/${jobId}/applications`);

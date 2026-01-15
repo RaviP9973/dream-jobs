@@ -30,6 +30,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateApplicationStatus } from "@/app/actions";
 import { ApplicationStatus } from "@prisma/client";
 import { prisma } from "@/app/utils/db";
+import { requireUser } from "@/app/utils/requireUser";
 
 // Status Helper for UI
 const statusConfig: Record<ApplicationStatus, { label: string, color: string }> = {
@@ -40,17 +41,16 @@ const statusConfig: Record<ApplicationStatus, { label: string, color: string }> 
   REJECTED: { label: "Rejected", color: "bg-red-600" },
 };
 
-export default async function JobApplicationsPage({ 
-  params 
-}: { 
-  params: { 'job-id': string } 
-}) {
-
-  const {"job-id": jobId} = await params;
+async function getJobWithApplications(jobId: string, status: ApplicationStatus = "PENDING") {
   const job = await prisma.jobPost.findUnique({
-    where: { id: jobId},
+    where: { 
+      id: jobId,
+    },
     include: {
       JobApplication: {
+        where: {
+          status: status
+        },
         include: {
           User: {
             include: { Jobseeker: true }
@@ -60,6 +60,22 @@ export default async function JobApplicationsPage({
       }
     }
   });
+  return job;
+}
+
+export default async function JobApplicationsPage({ 
+  params , searchParams
+}: { 
+  params: { 'job-id': string } ,
+  searchParams: { status?: ApplicationStatus }
+}) {
+
+  const session = await requireUser();
+  const {"job-id": jobId} = await params;
+  const {"status": statusParam} = await searchParams;
+  const status = statusParam || "PENDING";
+  
+  const job = await getJobWithApplications(jobId, status);
 
   if (!job) return notFound();
 
@@ -68,24 +84,23 @@ export default async function JobApplicationsPage({
       {/* Header section with Stats */}
       <div className="flex justify-between items-end">
         <div>
-          <h1 className="text-3xl font-bold">{job.jobTitle}</h1>
-          <p className="text-muted-foreground">Manage and review your {job.JobApplication.length} applicants</p>
+          <h1 className="text-3xl font-bold capitalize">{job.jobTitle}</h1>
+          <p className="text-muted-foreground">Manage and review your {job.JobApplication.length} {job.JobApplication.length === 1 ? "applicant" : "applicants"}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Total</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{job.JobApplication.length}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">In Interview</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {job.JobApplication.filter(a => a.status === 'INTERVIEW').length}
-            </p>
-          </CardContent>
-        </Card>
+      {/* filter for OFFER */}
+      <div className="flex items-center gap-4">
+        <span className="font-medium">Filter by Status:</span>
+        {Object.entries(statusConfig).map(([s, config]) => (
+          <Link
+            key={s}
+            href={`/my-jobs/${job.id}/applications?status=${s}`}
+            className={`px-3 py-1 rounded-full text-sm font-medium text-blue-600 ${s === status ? "underline font-bold" : ""}`}
+          >
+            {config.label}
+          </Link>
+        ))}
       </div>
 
       {/* Main Table */}
@@ -142,7 +157,7 @@ export default async function JobApplicationsPage({
                       {Object.keys(statusConfig).map((status) => (
                         <form key={status} action={async () => {
                           "use server";
-                          await updateApplicationStatus(app.id, status as ApplicationStatus, job.id);
+                          await updateApplicationStatus(app.id, status as ApplicationStatus, job.id, job.jobTitle, app.User.email as string);
                         }}>
                           <DropdownMenuItem>
                             <button type="submit" className="w-full text-left">

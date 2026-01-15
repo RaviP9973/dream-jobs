@@ -17,6 +17,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Dream-Jobs",
   description: "Online Job Portal for all your dream jobs",
+  icons: {
+    icon: "/logo.svg"
+  }
 };
 
 export default function RootLayout({

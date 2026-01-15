@@ -4,15 +4,6 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export const helloWorld = inngest.createFunction(
-  { id: "hello-world" },
-  { event: "test/hello.world" },
-  async ({ event, step }) => {
-    await step.sleep("wait-a-moment", "1s");
-    return { message: `Hello ${event.data.email}!` };
-  }
-);
-
 export const handleJobExpiration = inngest.createFunction(
   {
     id: "job-expiration", cancelOn: [{
@@ -138,3 +129,31 @@ export const sendPeriodicJobListing = inngest.createFunction(
     return {userId, message: 'Completed 30 day job listing notifications'}
   }
 );
+
+export const sendJobApplicationStatusUpdate = inngest.createFunction(
+  {
+    id: "send-application-status-update"
+  },
+  {
+    event: "application/status.updated",
+  },
+  async ({event, step}) => {
+    const { applicationId,title, newStatus, emailId } = event.data;
+    await step.run("send-status-update-email", async () => {
+      await resend.emails.send( {
+        from: "Acme <onboarding@resend.dev>",
+        to: "rp031776@gmail.com",
+        subject: "Your Job Application Status Update",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>Application Status Update</h2>
+            <p>Dear Applicant,</p>
+            <p>We wanted to inform you that the status of your job application (ID: ${applicationId}) for the position of <strong>${title}</strong> has been updated to <strong>${newStatus}</strong>.</p>
+            <p>Thank you for your interest in joining our team. We appreciate the time and effort you put into your application.</p>
+            <p>Best regards,<br/>The Recruitment Team</p>
+          </div>
+        `,
+      })
+    })
+  }
+)
