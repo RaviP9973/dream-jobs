@@ -1,0 +1,549 @@
+"use server";
+
+import { z } from "zod";
+import { requireUser } from "./utils/requireUser";
+import { companySchema, jobSchema, jobseekerSchema, jobseekerProfileSchema, applicationSchema } from "./utils/zodSchemas";
+import { prisma } from "./utils/db";
+import { redirect } from "next/navigation";
+import arcjet, { detectBot, shield } from "./utils/arcjet";
+import { request } from "@arcjet/next";
+import { stripe } from "./utils/stripe";
+import { jobListingDurationPricing } from "./utils/jobListingDurationPricing";
+import { revalidatePath } from "next/cache";
+import { inngest } from "./utils/inngest/client";
+import { ApplicationStatus } from "@prisma/client";
+import { calculateResumeScore } from "./utils/calculateResumeScore";
+
+const aj = arcjet
+  .withRule(
+    shield({
+      mode: "LIVE",
+    })
+  )
+  .withRule(
+    detectBot({
+      mode: "LIVE",
+      allow: [],
+    })
+  );
+
+export async function createCompany(data: z.infer<typeof companySchema>) {
+  const session = await requireUser();
+
+  const req = await request();
+
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Request denied by Arcjet");
+  }
+  const validateData = companySchema.parse(data);
+
+  await prisma.user.update({
+    where: { id: session.id },
+    data: {
+      onboardingComplete: true,
+      userType: "COMPANY",
+      Company: {
+        create: {
+          ...validateData,
+        },
+      },
+    },
+  });
+
+  return redirect("/");
+}
+
+export async function createJobSeeker(data: z.infer<typeof jobseekerSchema>) {
+  const user = await requireUser();
+
+  const req = await request();
+
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Request denied by Arcjet");
+  }
+
+  const validateData = jobseekerSchema.parse(data);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      onboardingComplete: true,
+      userType: "JOBSEEKER",
+      Jobseeker: {
+        create: {
+          ...validateData,
+        },
+      },
+    },
+  });
+
+  return redirect("/");
+}
+
+export async function createJob(data: z.infer<typeof jobSchema>) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Forbidden");
+  }
+
+  // Create job logic here
+  const validateData = jobSchema.parse(data);
+
+  const company = await prisma.company.findUnique({
+    where: {
+      userId: user.id,
+    },
+    select: {
+      id: true,
+      user: {
+        select: {
+          stripeCustomerId: true,
+        },
+      },
+    },
+  });
+
+  if (!company?.id) {
+    return redirect("/");
+  }
+
+  let stripeCustomerId = company.user.stripeCustomerId;
+
+  if (!stripeCustomerId) {
+    // Create Stripe customer
+    const customer = await stripe.customers.create({
+      email: user.email as string,
+      name: user.name as string,
+    });
+
+    stripeCustomerId = customer.id;
+
+    await prisma.user.update({
+      where: {
+        id: user.id,
+      },
+      data: {
+        stripeCustomerId: stripeCustomerId,
+      },
+    });
+  }
+
+  const jobPost = await prisma.jobPost.create({
+    data: {
+      jobDescription: validateData.jobDescription,
+      jobTitle: validateData.jobTitle,
+      location: validateData.location,
+      employmentType: validateData.employmentType,
+      listingDuration: validateData.listingDuration,
+      benefits: validateData.benefits,
+      salaryFrom: validateData.salaryFrom,
+      salaryTo: validateData.salaryTo,
+      companyId: company?.id,
+      status: "DRAFT", // Will be set to ACTIVE after payment
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  const pricingTier = jobListingDurationPricing.find(
+    (tier) => tier.days === validateData.listingDuration
+  );
+
+  if (!pricingTier) {
+    throw new Error("Invalid listing duration selected");
+  }
+
+
+  const session = await stripe.checkout.sessions.create({
+    customer: stripeCustomerId,
+    line_items: [
+      {
+        price_data: {
+          currency: "USD",
+          unit_amount: pricingTier.price * 100, // in cents
+          product_data: {
+            name: `Job Posting - ${pricingTier.days} Days`,
+            description: pricingTier.description,
+            images: [
+              "https://kzfp0kl6r4.ufs.sh/f/QizcO0TRz5cPAN53b9LDc0gAC59epKda7mSiuFTMNXLxkjI1",
+            ],
+          },
+        },
+        quantity: 1,
+      },
+    ],
+    metadata: {
+      jobId: jobPost.id,
+      expirationDays: validateData.listingDuration,
+    },
+    mode: "payment",
+    success_url: `${process.env.NEXT_PUBLIC_URL}/payment/success`,
+    cancel_url: `${process.env.NEXT_PUBLIC_URL}/payment/cancel`,
+  });
+
+  return redirect(session.url as string);
+}
+
+
+export async function saveJobPost(jobId: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision =  await aj.protect(req);
+
+  if(decision.isDenied()){
+    throw new Error("Forbidden");
+  }
+
+  await prisma.savedJobPost.create( {
+    data: {
+      userId: user.id as string,
+      jobPostId: jobId,
+    }
+  })
+
+  revalidatePath(`/job/${jobId}`);
+}
+export async function unsaveJobPost(savedJobPostId: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision =  await aj.protect(req);
+
+  if(decision.isDenied()){
+    throw new Error("Forbidden");
+  }
+
+  const data = await prisma.savedJobPost.delete( {
+    where: {
+      id: savedJobPostId,
+      userId: user.id as string,
+    },
+    select: {
+      jobPostId: true,
+    }
+  })
+
+  revalidatePath(`/job/${data.jobPostId}`);
+}
+
+export async function editJobPost(data: z.infer<typeof jobSchema>, jobId: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+  const validateData = jobSchema.parse(data);
+
+  if(decision.isDenied()){
+    throw new Error("Forbidden");
+  }
+
+  await prisma.jobPost.update( {
+    where: {
+      id: jobId,
+      Company: {
+        userId: user.id,
+      }
+    },
+    data: {
+      jobDescription: validateData.jobDescription,
+      jobTitle: validateData.jobTitle,
+      location: validateData.location,
+      salaryFrom: validateData.salaryFrom,
+      salaryTo: validateData.salaryTo,
+      employmentType: validateData.employmentType,
+      listingDuration: validateData.listingDuration,
+      benefits: validateData.benefits,
+
+    }
+  })
+
+  return redirect("/my-jobs");
+}
+
+export async function updateJobseekerResume(resumeUrl: string, oldResumeUrl?: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Forbidden");
+  }
+
+  // Update the jobseeker's resume
+  await prisma.jobseeker.update({
+    where: {
+      userId: user.id,
+    },
+    data: {
+      resume: resumeUrl,
+    },
+  });
+
+  // If there was an old resume, you might want to delete it from uploadthing
+  // This would require additional implementation with uploadthing's deleteFiles API
+
+  revalidatePath("/");
+}
+
+export async function updateJobseekerProfile(data: z.infer<typeof jobseekerProfileSchema>) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Forbidden");
+  }
+
+  const validateData = jobseekerProfileSchema.parse(data);
+
+  console.log("Updating jobseeker profile:", {
+    userId: user.id,
+    projectsCount: validateData.projects.length,
+    projects: JSON.stringify(validateData.projects, null, 2)
+  });
+
+  // Clean up projects data - remove empty URLs
+  const cleanedProjects = validateData.projects.map(project => ({
+    title: project.title,
+    description: project.description,
+    technologies: project.technologies,
+    projectUrl: project.projectUrl && project.projectUrl !== "" ? project.projectUrl : undefined,
+    githubUrl: project.githubUrl && project.githubUrl !== "" ? project.githubUrl : undefined,
+  }));
+
+  console.log("Cleaned projects for DB:", JSON.stringify(cleanedProjects, null, 2));
+
+  const updatedJobseeker = await prisma.jobseeker.update({
+    where: {
+      userId: user.id,
+    },
+    data: {
+      name: validateData.name,
+      about: validateData.about,
+      skills: validateData.skills,
+      achievements: validateData.achievements,
+      projects: cleanedProjects,
+      university: validateData.university,
+      degree: validateData.degree,
+      fieldOfStudy: validateData.fieldOfStudy,
+      graduationYear: validateData.graduationYear,
+      currentlyStudying: validateData.currentlyStudying,
+    },
+  });
+
+  console.log("✅ Profile updated successfully!");
+  console.log("Projects saved to DB:", JSON.stringify(updatedJobseeker.projects, null, 2));
+
+  revalidatePath("/profile");
+  return { success: true };
+}
+
+export async function applyToJob(data: z.infer<typeof applicationSchema>) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Forbidden");
+  }
+
+  const validateData = applicationSchema.parse(data);
+
+  if (!validateData.jobPostId) {
+    throw new Error("Job post ID is required");
+  }
+
+  if (!validateData.resume) {
+    throw new Error("Please upload a resume before applying");
+  }
+
+  // Check if already applied
+  const existingApplication = await prisma.jobApplication.findUnique({
+    where: {
+      userId_jobPostId: {
+        userId: user.id as string,
+        jobPostId: validateData.jobPostId,
+      },
+    },
+  });
+
+  if (existingApplication) {
+    throw new Error("You have already applied to this job");
+  }
+
+  // Fetch job details for scoring
+  const jobPost = await prisma.jobPost.findUnique({
+    where: {
+      id: validateData.jobPostId,
+    },
+    select: {
+      jobTitle: true,
+      jobDescription: true,
+      employmentType: true,
+      location: true,
+      benefits: true,
+    },
+  });
+
+  if (!jobPost) {
+    throw new Error("Job post not found");
+  }
+
+  // Fetch jobseeker profile for enhanced scoring
+  const jobseekerProfile = await prisma.jobseeker.findUnique({
+    where: {
+      userId: user.id,
+    },
+    select: {
+      skills: true,
+      achievements: true,
+      projects: true,
+      university: true,
+      degree: true,
+    },
+  });
+
+  // Calculate resume match score using AI with profile data
+  let matchScore = 50; // Default score
+  try {
+    const profileContext = jobseekerProfile
+      ? `\n\nCandidate Profile:\n- Skills: ${jobseekerProfile.skills.join(", ")}\n- Projects: ${jobseekerProfile.projects ? JSON.stringify(jobseekerProfile.projects) : "None"}\n- Education: ${jobseekerProfile.degree} from ${jobseekerProfile.university}`
+      : "";
+
+    const scoreResult = await calculateResumeScore(
+      validateData.resume + profileContext,
+      jobPost.jobDescription,
+      jobPost.jobTitle,
+      jobPost.employmentType,
+      jobPost.location,
+      jobPost.benefits
+    );
+    matchScore = scoreResult.score;
+    console.log(`Resume score calculated: ${matchScore} - ${scoreResult.reasoning}`);
+  } catch (error) {
+    console.error("Error calculating resume score:", error);
+    // Continue with default score if AI analysis fails
+  }
+
+  // Create the job application with the match score
+  await prisma.jobApplication.create({
+    data: {
+      userId: user.id as string,
+      jobPostId: validateData.jobPostId,
+      resume: validateData.resume,
+      matchScore: matchScore,
+    },
+  });
+
+  // Increment application count on job post
+  await prisma.jobPost.update({
+    where: {
+      id: validateData.jobPostId,
+    },
+    data: {
+      application: {
+        increment: 1,
+      },
+    },
+  });
+
+  revalidatePath(`/job/${validateData.jobPostId}`);
+}
+
+export async function deleteJobPost(jobId: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+  if(decision.isDenied()){
+    throw new Error("Forbidden");
+  }
+
+  await prisma.jobPost.delete( {
+    where: {
+      id: jobId,
+      Company: {
+        userId: user.id,
+      }
+    }
+  })
+
+  await inngest.send( {
+    name: "job/cancel.expiration",
+    data: {
+      jobId: jobId,
+    }
+  })
+
+  return redirect("/my-jobs");
+}
+
+export async function markApplicationAsReviewed(applicationId: string, status: string) {
+  const user = await requireUser();
+
+  const req = await request();
+  const decision = await aj.protect(req);
+
+  if (decision.isDenied()) {
+    throw new Error("Forbidden");
+  }
+
+  // Update the application status to IN_REVIEW
+  await prisma.jobApplication.update({
+    where: {
+      id: applicationId,
+    },
+    data: {
+      status: "IN_REVIEW",
+    },
+  });
+
+  revalidatePath("/my-jobs");
+}
+
+
+export async function updateApplicationStatus(
+  applicationId: string, 
+  newStatus: ApplicationStatus,
+  jobId: string,
+  jobTitle: string,
+  emailId: string
+) {
+  try {
+    await prisma.jobApplication.update({
+      where: { id: applicationId },
+      data: { status: newStatus },
+    });
+
+    // send email notification to applicant about status change
+    await inngest.send( {
+      name: "application/status.updated",
+      data: {
+        applicationId,
+        newStatus,
+        title: jobTitle,
+        emailId: emailId,
+      }
+    })
+
+    // Refresh the page data without a full reload
+    revalidatePath(`/dashboard/jobs/${jobId}/applications`);
+    
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: "Failed to update status" };
+  }
+}

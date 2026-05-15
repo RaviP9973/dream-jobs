@@ -1,0 +1,30 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle for the icon -->
+  <circle cx="30" cy="30" r="25" fill="#3B82F6" opacity="0.1"/>
+  
+  <!-- Building/Career ladder icon -->
+  <path d="M18 40V20C18 19.4477 18.4477 19 19 19H25C25.5523 19 26 19.4477 26 20V40" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  <path d="M30 40V24C30 23.4477 30.4477 23 31 23H37C37.5523 23 38 23.4477 38 24V40" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  <path d="M42 40V28C42 27.4477 42.4477 27 43 27H49C49.5523 27 50 27.4477 50 28V40" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Career ladder steps -->
+  <line x1="22" y1="25" x2="22" y2="25" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="22" y1="30" x2="22" y2="30" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="22" y1="35" x2="22" y2="35" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  
+  <line x1="34" y1="29" x2="34" y2="29" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="34" y1="34" x2="34" y2="34" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  
+  <line x1="46" y1="33" x2="46" y2="33" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  <line x1="46" y1="37" x2="46" y2="37" stroke="#3B82F6" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Star for dreams/aspirations -->
+  <path d="M30 15L31.176 18.382L35 17.5L32.618 20.324L35 23.5L31.176 22.618L30 26L28.824 22.618L25 23.5L27.382 20.324L25 17.5L28.824 18.382L30 15Z" fill="#FBBF24"/>
+  
+  <!-- Text -->
+  <text x="65" y="25" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="#1F2937">Dream</text>
+  <text x="65" y="45" font-family="Inter, system-ui, sans-serif" font-size="18" font-weight="700" fill="#3B82F6">Jobs</text>
+  
+  <!-- Subtle accent line -->
+  <line x1="65" y1="28" x2="140" y2="28" stroke="#E5E7EB" stroke-width="1"/>
+</svg>
