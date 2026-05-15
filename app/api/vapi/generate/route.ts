@@ -1,25 +1,11 @@
-// import { NextRequest, NextResponse } from "next/server";
-// import { success } from "zod";
-// import {generateText} from 'ai'
-// export async function GET() {}
+import { NextRequest, NextResponse } from "next/server";
 
-// export async function POST(req: NextRequest) {
-//   try {
-//     const { type, role, level, techstack, amount, userId } = await req.json();
-
-    
-
-//   } catch (error) {
-//     console.error(error);
-
-//     return NextResponse.json(
-//       { 
-//         error: "Failed to generate interview", 
-//         success: false 
-//     },
-//       { 
-//         status: 500 
-//     },
-//     );
-//   }
-// }
+export async function POST(_req: NextRequest) {
+	return NextResponse.json(
+		{
+			success: false,
+			error: "Vapi generate route is not implemented yet.",
+		},
+		{ status: 501 }
+	);
+}
