@@ -9,11 +9,14 @@ export const handleJobExpiration = inngest.createFunction(
     id: "job-expiration", cancelOn: [{
       event: 'job/cancel.expiration',
       if: 'event.data.jobId == async.data.jobId'
-    }]
+    }],
+    triggers: {
+      event: "job/created",
+    }
   },
-  {
-    event: "job/created",
-  },
+  // {
+  //   event: "job/created",
+  // },
   async ({ event, step }) => {
     const { jobId, expirationDays } = event.data;
 
@@ -35,8 +38,10 @@ export const handleJobExpiration = inngest.createFunction(
 );
 
 export const sendPeriodicJobListing = inngest.createFunction(
-  { id: "send-job-listings" },
-  { event: "jobseeker/created" },
+  { id: "send-job-listings" , triggers: {
+    event: "jobseeker/created",
+  }},
+  // { event: "jobseeker/created" },
   async ({ event, step }) => {
     const { userId } = event.data;
 
@@ -132,11 +137,14 @@ export const sendPeriodicJobListing = inngest.createFunction(
 
 export const sendJobApplicationStatusUpdate = inngest.createFunction(
   {
-    id: "send-application-status-update"
+    id: "send-application-status-update",
+    triggers: {
+      event: "application/status.updated",
+    }
   },
-  {
-    event: "application/status.updated",
-  },
+  // {
+  //   event: "application/status.updated",
+  // },
   async ({event, step}) => {
     const { applicationId,title, newStatus, emailId } = event.data;
     await step.run("send-status-update-email", async () => {
