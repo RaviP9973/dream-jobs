@@ -1,20 +1,67 @@
-
 import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
 import Google from "next-auth/providers/google"
+import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import { prisma } from "./db"
+import bcrypt from "bcryptjs"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  
-  providers: [GitHub, Google],
   adapter: PrismaAdapter(prisma),
+  session: { strategy: "jwt" },
+  providers: [
+    GitHub, 
+    Google,
+    CredentialsProvider({
+      name: 'Credentials',
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" }
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          throw new Error("Missing credentials");
+        }
+
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email as string }
+        }) as any;
+
+        if (!user || !user.password) {
+          throw new Error("Invalid email or password");
+        }
+
+        const isValid = await bcrypt.compare(credentials.password as string, user.password);
+
+        if (!isValid) {
+          throw new Error("Invalid email or password");
+        }
+
+        if (!user.emailVerified) {
+          throw new Error("Please verify your email first");
+        }
+
+        return {
+          id: user.id,
+          name: user.name as string,
+          email: user.email as string,
+          image: user.image as string,
+        };
+      }
+    })
+  ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (session.user && token.sub) {
         // Fetch user type from database
         const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
+          where: { id: token.sub },
           select: { 
             userType: true, 
             onboardingComplete: true,
@@ -25,10 +72,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         });
         
         // Attach all user details to session
-        session.user.id = user.id;
-        session.user.email = dbUser?.email || user.email || "";
-        session.user.name = dbUser?.name || user.name || "";
-        session.user.image = dbUser?.image || user.image || null;
+        session.user.id = token.sub;
+        session.user.email = dbUser?.email || session.user.email || "";
+        session.user.name = dbUser?.name || session.user.name || "";
+        session.user.image = dbUser?.image || session.user.image || null;
         session.user.userType = dbUser?.userType ?? null;
         session.user.onboardingComplete = dbUser?.onboardingComplete ?? false;
       }

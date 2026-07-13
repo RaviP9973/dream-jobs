@@ -1,6 +1,7 @@
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -8,9 +9,10 @@ generator client {
 }
 
 model User {
-  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  id            String    @id @default(uuid())
   name          String?
   email         String?   @unique
+  password      String?
   emailVerified DateTime?
   image         String?
   accounts      Account[]
@@ -37,7 +39,7 @@ enum userType {
 }
 
 model Company {
-  id       String  @id @default(auto()) @map("_id") @db.ObjectId
+  id       String  @id @default(uuid())
   name     String
   about    String?
   location String
@@ -48,14 +50,14 @@ model Company {
   JobPost JobPost[]
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @unique @db.ObjectId
+  userId String @unique
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Jobseeker {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  id     String @id @default(uuid())
   name   String
   about  String
   resume String
@@ -77,23 +79,23 @@ model Jobseeker {
   currentlyStudying Boolean @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @unique @db.ObjectId
+  userId String @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Account {
-  id                String  @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String  @db.ObjectId
+  id                String  @id @default(uuid())
+  userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.String
-  access_token      String? @db.String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.String
+  id_token          String? @db.Text
   session_state     String?
 
   createdAt DateTime @default(now())
@@ -105,9 +107,9 @@ model Account {
 }
 
 model Session {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  id           String   @id @default(uuid())
   sessionToken String   @unique
-  userId       String   @db.ObjectId
+  userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -116,7 +118,7 @@ model Session {
 }
 
 model VerificationToken {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  id         String   @id @default(uuid())
   identifier String
   token      String
   expires    DateTime
@@ -125,7 +127,7 @@ model VerificationToken {
 }
 
 model JobPost {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
   jobTitle        String
   employmentType  String
@@ -142,7 +144,7 @@ model JobPost {
   updatedAt DateTime @updatedAt
 
   Company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String  @db.ObjectId
+  companyId String
 
   SavedJobPost SavedJobPost[]
   JobApplication JobApplication[]
@@ -155,13 +157,13 @@ enum JobPostStatus {
 }
 
 model SavedJobPost {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
   User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @db.ObjectId
+  userId String
 
   jobPost   JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
-  jobPostId String  @db.ObjectId
+  jobPostId String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -173,16 +175,16 @@ model SavedJobPost {
 //create the jobApplication model
 
 model JobApplication {
-  id String @id @default(auto()) @map("_id") @db.ObjectId
+  id String @id @default(uuid())
 
   User   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  userId String @db.ObjectId
+  userId String
 
   JobPost   JobPost @relation(fields: [jobPostId], references: [id], onDelete: Cascade)
-  jobPostId String  @db.ObjectId
+  jobPostId String
 
   // jobSeeker Jobseeker @relation(fields: [jobSeekerId], references: [id], onDelete: Cascade)
-  // jobSeekerId String @db.ObjectId
+  // jobSeekerId String
 
   resume      String
   matchScore  Int?    @default(0) // 0-100 score showing how well the resume matches the job

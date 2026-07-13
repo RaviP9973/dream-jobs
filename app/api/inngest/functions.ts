@@ -1,8 +1,6 @@
 import { prisma } from "@/app/utils/db";
 import { inngest } from "@/app/utils/inngest/client";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendEmail } from "@/app/utils/mailsender";
 
 export const handleJobExpiration = inngest.createFunction(
   {
@@ -104,8 +102,7 @@ export const sendPeriodicJobListing = inngest.createFunction(
             )
             .join("");
 
-          await resend.emails.send({
-            from: "Acme <onboarding@resend.dev>",
+          await sendEmail({
             to: 'rp031776@gmail.com',
             subject: "Latest Job opportunities for You",
             html: `
@@ -148,8 +145,7 @@ export const sendJobApplicationStatusUpdate = inngest.createFunction(
   async ({event, step}) => {
     const { applicationId,title, newStatus, emailId } = event.data;
     await step.run("send-status-update-email", async () => {
-      await resend.emails.send( {
-        from: "Acme <onboarding@resend.dev>",
+      await sendEmail( {
         to: "rp031776@gmail.com",
         subject: "Your Job Application Status Update",
         html: `
@@ -159,6 +155,33 @@ export const sendJobApplicationStatusUpdate = inngest.createFunction(
             <p>We wanted to inform you that the status of your job application (ID: ${applicationId}) for the position of <strong>${title}</strong> has been updated to <strong>${newStatus}</strong>.</p>
             <p>Thank you for your interest in joining our team. We appreciate the time and effort you put into your application.</p>
             <p>Best regards,<br/>The Recruitment Team</p>
+          </div>
+        `,
+      })
+    })
+  }
+)
+
+export const sendOtpEmail = inngest.createFunction(
+  {
+    id: "send-otp-email",
+    triggers: {
+      event: "otp.sent"
+    }
+  },
+  async ({event, step}) => {
+    const { emailId, otp } = event.data;
+    await step.run("send-otp-email", async () => {
+      await sendEmail( {
+        to: emailId,
+        subject: "Your OTP for email verification",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2>OTP for Email Verification</h2>
+            <p>Dear User,</p>
+            <p>Your OTP for email verification is: <strong>${otp}</strong>.</p>
+            <p>Thank you for using our service.</p>
+            <p>Best regards,<br/>The DreamJobs Team</p>
           </div>
         `,
       })

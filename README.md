@@ -26,14 +26,14 @@ A modern, full-stack job board platform built with Next.js 16, allowing companie
 - ⚡ Real-time job processing with Inngest
 - 📧 Email notifications via Resend
 - 📁 File uploads with UploadThing
-- 💾 MongoDB database with Prisma ORM
+- 💾 NeonDB PostgreSQL database with Prisma ORM
 - 🎯 Rich text editor for job descriptions
 
 ## 🛠️ Tech Stack
 
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript
-- **Database:** MongoDB
+- **Database:** NeonDB (PostgreSQL)
 - **ORM:** Prisma
 - **Authentication:** NextAuth v5
 - **Payments:** Stripe
@@ -52,7 +52,7 @@ A modern, full-stack job board platform built with Next.js 16, allowing companie
 
 - Node.js 20.x or later
 - pnpm (recommended) or npm
-- MongoDB database
+- NeonDB (PostgreSQL) database
 - Accounts for external services (see Environment Variables)
 
 ### Installation
@@ -74,7 +74,7 @@ A modern, full-stack job board platform built with Next.js 16, allowing companie
    
    ```env
    # Database
-   DATABASE_URL="mongodb+srv://username:password@cluster.mongodb.net/dream-jobs"
+   DATABASE_URL="postgresql://user:password@hostname/dbname?sslmode=require"
    
    # NextAuth
    AUTH_SECRET="your-auth-secret-generate-with-openssl-rand-base64-32"
@@ -122,10 +122,10 @@ A modern, full-stack job board platform built with Next.js 16, allowing companie
 
 ## 📝 Environment Variables Setup Guide
 
-### MongoDB Database
-1. Create a free account at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-2. Create a new cluster
-3. Get your connection string and add it to `DATABASE_URL`
+### NeonDB Database
+1. Create a free account at [Neon](https://neon.tech/)
+2. Create a new project and database
+3. Get your Postgres connection string and add it to `DATABASE_URL`
 
 ### NextAuth (Authentication)
 1. **GitHub OAuth:**
@@ -264,7 +264,7 @@ The application sends emails for:
 - Update `NEXT_PUBLIC_URL` to your production URL
 - Set up production webhook URLs for Stripe and Inngest
 - Use production credentials for all services
-- Ensure MongoDB Atlas allows connections from Vercel IPs
+- Ensure NeonDB allows connections from Vercel IPs
 
 ## 📜 Available Scripts
 
