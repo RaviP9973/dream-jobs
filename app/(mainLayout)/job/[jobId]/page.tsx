@@ -1,7 +1,6 @@
 import { saveJobPost, unsaveJobPost } from "@/app/actions";
 import arcjet, {
   detectBot,
-  fixedWindow,
   tokenBucket,
 } from "@/app/utils/arcjet";
 import { auth } from "@/app/utils/auth";
@@ -21,6 +20,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ResumeUploadSection } from "@/components/general/ResumeUploadSection";
+import { JobPostStatus } from "@prisma/client";
 
 const aj = arcjet.withRule(
   detectBot({
@@ -54,9 +54,9 @@ function getClient(session: boolean) {
 async function getJob(jobId: string, userId?: string) {
   console.log("userId", userId);
   const [jobData, savedJob, jobseeker] = await Promise.all([
-    await prisma.jobPost.findUnique({
+    prisma.jobPost.findUnique({
       where: {
-        status: "ACTIVE",
+        status: JobPostStatus.ACTIVE,
         id: jobId,
       },
       select: {
@@ -172,15 +172,11 @@ export default async function jobIdPage({ params }: { params: Params }) {
           </div>
 
           {session?.user ? (
-            <form
-              action={
-                savedJob
-                  ? unsaveJobPost.bind(null, savedJob.id)
-                  : saveJobPost.bind(null, jobId)
-              }
-            >
-              <SaveJobButton savedJob={!!savedJob} />
-            </form>
+            <SaveJobButton 
+              savedJob={!!savedJob} 
+              jobId={jobId} 
+              savedJobId={savedJob?.id} 
+            />
           ) : (
             <Link
               href={"/login"}

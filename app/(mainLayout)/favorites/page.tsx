@@ -1,4 +1,3 @@
-import { auth } from "@/app/utils/auth";
 import { prisma } from "@/app/utils/db";
 import { requireUser } from "@/app/utils/requireUser";
 import { EmptyState } from "@/components/general/EmptyState";

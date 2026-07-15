@@ -148,6 +148,10 @@ model JobPost {
 
   SavedJobPost SavedJobPost[]
   JobApplication JobApplication[]
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([companyId])
+  @@index([location])
 }
 
 enum JobPostStatus {
@@ -169,6 +173,7 @@ model SavedJobPost {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, jobPostId])
+  @@index([jobPostId])
 }
 
 
@@ -194,6 +199,7 @@ model JobApplication {
   updatedAt DateTime @updatedAt
 
   @@unique([userId, jobPostId])
+  @@index([jobPostId])
 }
 
 enum ApplicationStatus {

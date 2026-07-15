@@ -1,6 +1,76 @@
 import { prisma } from "@/app/utils/db";
 import { inngest } from "@/app/utils/inngest/client";
 import { sendEmail } from "@/app/utils/mailsender";
+import { calculateResumeScore } from "@/app/utils/calculateResumeScore";
+
+export const analyzeResumeScore = inngest.createFunction(
+  { id: "analyze-resume-score", triggers: [{ event: "application/created" }] },
+  async ({ event, step }) => {
+    const { applicationId, userId, jobPostId, resumeUrl } = event.data;
+
+    // Fetch job details
+    const jobPost = await step.run("fetch-job-details", async () => {
+      return await prisma.jobPost.findUnique({
+        where: { id: jobPostId },
+        select: {
+          jobTitle: true,
+          jobDescription: true,
+          employmentType: true,
+          location: true,
+          benefits: true,
+        },
+      });
+    });
+
+    if (!jobPost) return { message: "Job post not found" };
+
+    // Fetch jobseeker profile
+    const jobseekerProfile = await step.run("fetch-jobseeker-profile", async () => {
+      return await prisma.jobseeker.findUnique({
+        where: { userId },
+        select: {
+          skills: true,
+          achievements: true,
+          projects: true,
+          university: true,
+          degree: true,
+        },
+      });
+    });
+
+    const profileContext = jobseekerProfile
+      ? `\n\nCandidate Profile:\n- Skills: ${jobseekerProfile.skills.join(", ")}\n- Projects: ${jobseekerProfile.projects ? JSON.stringify(jobseekerProfile.projects) : "None"}\n- Education: ${jobseekerProfile.degree} from ${jobseekerProfile.university}`
+      : "";
+
+    // Calculate score
+    const scoreResult = await step.run("calculate-score-ai", async () => {
+      try {
+        return await calculateResumeScore(
+          resumeUrl + profileContext,
+          jobPost.jobDescription,
+          jobPost.jobTitle,
+          jobPost.employmentType,
+          jobPost.location,
+          jobPost.benefits
+        );
+      } catch (error) {
+        console.error("AI scoring failed", error);
+        return { score: 0, reasoning: "AI scoring failed" };
+      }
+    });
+
+    // Update the application
+    await step.run("update-application-score", async () => {
+      await prisma.jobApplication.update({
+        where: { id: applicationId },
+        data: { matchScore: scoreResult.score },
+      });
+    });
+
+    return { applicationId, matchScore: scoreResult.score };
+  }
+);
+
 
 export const handleJobExpiration = inngest.createFunction(
   {
@@ -36,9 +106,9 @@ export const handleJobExpiration = inngest.createFunction(
 );
 
 export const sendPeriodicJobListing = inngest.createFunction(
-  { id: "send-job-listings" , triggers: {
+  { id: "send-job-listings" , triggers: [{
     event: "jobseeker/created",
-  }},
+  }]},
   // { event: "jobseeker/created" },
   async ({ event, step }) => {
     const { userId } = event.data;

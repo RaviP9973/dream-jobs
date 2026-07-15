@@ -76,11 +76,7 @@ export function JobseekerProfileForm({ jobseeker }: JobseekerProfileFormProps) {
   async function onSubmit(data: z.infer<typeof jobseekerProfileSchema>) {
     try {
       setPending(true);
-      console.log("Submitting profile data:", {
-        ...data,
-        projects: data.projects,
-        projectsCount: data.projects.length
-      });
+
       const result = await updateJobseekerProfile(data);
       if (result?.success) {
         toast.success("Profile updated successfully!");

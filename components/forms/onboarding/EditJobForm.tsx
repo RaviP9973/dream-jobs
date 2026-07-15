@@ -6,7 +6,16 @@ import { jobFormSchema } from "@/app/utils/zodSchemas";
 import { BenefitsSelector } from "@/components/general/BenefitsSelector";
 import { SalaryRangeSelector } from "@/components/general/SalaryRangeSelector";
 import { UploadDropzone } from "@/components/general/UploadThingReexported";
-import { JobDescriptionEditor } from "@/components/richTextEditor/JobDescriptionEditor";
+import dynamic from "next/dynamic";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const JobDescriptionEditor = dynamic(
+  () => import("@/components/richTextEditor/JobDescriptionEditor").then((mod) => mod.JobDescriptionEditor),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[300px] w-full" />,
+  }
+);
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";

@@ -33,6 +33,7 @@ export async function Navbar() {
             name={session.user.name}
             image={session.user.image || ""}
             userId={session.user.id}
+            userType={session?.user?.userType!}
           />
         ) : (
           <Link

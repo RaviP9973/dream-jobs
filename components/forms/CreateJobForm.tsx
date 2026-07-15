@@ -28,7 +28,16 @@ import {
 import { countryList } from "@/app/utils/countryList";
 import Image from "next/image";
 import { SalaryRangeSelector } from "../general/SalaryRangeSelector";
-import { JobDescriptionEditor } from "../richTextEditor/JobDescriptionEditor";
+import dynamic from "next/dynamic";
+import { Skeleton } from "../ui/skeleton";
+
+const JobDescriptionEditor = dynamic(
+  () => import("../richTextEditor/JobDescriptionEditor").then((mod) => mod.JobDescriptionEditor),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[300px] w-full" />,
+  }
+);
 import { BenefitsSelector } from "../general/BenefitsSelector";
 import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";

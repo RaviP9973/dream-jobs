@@ -24,8 +24,8 @@ async function getData({
     }),
     ...(location &&
       location !== "worldwide" && {
-        location: location,
-      }),
+      location: location,
+    }),
   };
   const [data, totalCount] = await Promise.all([
     prisma.jobPost.findMany({
@@ -55,9 +55,7 @@ async function getData({
     }),
 
     prisma.jobPost.count({
-      where: {
-        status: "ACTIVE",
-      },
+      where: where,
     }),
   ]);
 

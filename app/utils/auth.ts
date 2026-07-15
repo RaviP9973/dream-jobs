@@ -51,33 +51,42 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.id = user.id;
+      }
+
+      if (user || trigger === "update") {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.sub as string },
+          select: {
+            name: true,
+            email: true,
+            image: true,
+            userType: true, 
+            onboardingComplete: true
+          },
+        });
+
+        if (dbUser) {
+          token.name = dbUser.name !== null ? dbUser.name : token.name;
+          token.email = dbUser.email !== null ? dbUser.email : token.email;
+          token.picture = dbUser.image !== null ? dbUser.image : token.picture;
+          token.userType = dbUser.userType;
+          token.onboardingComplete = dbUser.onboardingComplete;
+        }
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.sub) {
-        // Fetch user type from database
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.sub },
-          select: { 
-            userType: true, 
-            onboardingComplete: true,
-            email: true,
-            name: true,
-            image: true,
-          },
-        });
-        
-        // Attach all user details to session
+        console.log("session -> user", session.user);
         session.user.id = token.sub;
-        session.user.email = dbUser?.email || session.user.email || "";
-        session.user.name = dbUser?.name || session.user.name || "";
-        session.user.image = dbUser?.image || session.user.image || null;
-        session.user.userType = dbUser?.userType ?? null;
-        session.user.onboardingComplete = dbUser?.onboardingComplete ?? false;
+        session.user.name = (token.name as string) || session.user.name;
+        session.user.email = (token.email as string) || session.user.email;
+        session.user.image = (token.picture as string) || session.user.image;
+        session.user.userType = token.userType as any;
+        session.user.onboardingComplete = token.onboardingComplete as any;
       }
       return session;
     },

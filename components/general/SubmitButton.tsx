@@ -46,25 +46,42 @@ export default function GeneralSubmitButton({
 }
 
 
-export function SaveJobButton({savedJob} : {savedJob: boolean}) {
-  const { pending } = useFormStatus();
-  return (  
-    <Button type="submit" variant="outline" disabled={pending} className="flex items-center gap-2">
-      {
-        pending ? (
-          <>
-            <Loader2 className="size-4 animate-spin" />
-            <span>{!savedJob ? "Saving..." : "Unsaving..."}</span>
-          </>
-        ) : (
-          <>
-            <Heart className={cn(
-              savedJob ? 'fill-current text-red-500': 'size-4 transition-colors',
-            )} />
-            {savedJob ? <span>Saved</span> : <span>Save Job</span>}
-          </>
-        )
-      }
-    </Button>
-  )
+import { useOptimistic } from "react";
+import { saveJobPost, unsaveJobPost } from "@/app/actions";
+
+export function SaveJobButton({
+  savedJob,
+  jobId,
+  savedJobId,
+}: {
+  savedJob: boolean;
+  jobId: string;
+  savedJobId?: string;
+}) {
+  const [optimisticSaved, addOptimistic] = useOptimistic(
+    savedJob,
+    (state, _newVal) => !state
+  );
+
+  return (
+    <form
+      action={async () => {
+        addOptimistic(!savedJob);
+        if (savedJob && savedJobId) {
+          await unsaveJobPost(savedJobId);
+        } else {
+          await saveJobPost(jobId);
+        }
+      }}
+    >
+      <Button type="submit" variant="outline" className="flex items-center gap-2">
+        <Heart
+          className={cn(
+            optimisticSaved ? "fill-current text-red-500" : "size-4 transition-colors"
+          )}
+        />
+        {optimisticSaved ? <span>Saved</span> : <span>Save Job</span>}
+      </Button>
+    </form>
+  );
 }
