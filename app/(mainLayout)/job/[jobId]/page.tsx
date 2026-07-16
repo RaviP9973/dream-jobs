@@ -21,6 +21,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ResumeUploadSection } from "@/components/general/ResumeUploadSection";
 import { JobPostStatus } from "@prisma/client";
+import type { Metadata } from "next";
+import { cache } from "react";
 
 const aj = arcjet.withRule(
   detectBot({
@@ -51,34 +53,38 @@ function getClient(session: boolean) {
   }
 }
 
+const getCachedJob = cache(async (jobId: string) => {
+  return await prisma.jobPost.findUnique({
+    where: {
+      status: JobPostStatus.ACTIVE,
+      id: jobId,
+    },
+    select: {
+      jobTitle: true,
+      jobDescription: true,
+      location: true,
+      employmentType: true,
+      benefits: true,
+      createdAt: true,
+      listingDuration: true,
+      salaryFrom: true,
+      salaryTo: true,
+      Company: {
+        select: {
+          name: true,
+          logo: true,
+          location: true,
+          about: true,
+        },
+      },
+    },
+  });
+});
+
 async function getJob(jobId: string, userId?: string) {
   console.log("userId", userId);
   const [jobData, savedJob, jobseeker] = await Promise.all([
-    prisma.jobPost.findUnique({
-      where: {
-        status: JobPostStatus.ACTIVE,
-        id: jobId,
-      },
-      select: {
-        jobTitle: true,
-        jobDescription: true,
-        location: true,
-        employmentType: true,
-        benefits: true,
-        createdAt: true,
-        listingDuration: true,
-        salaryFrom: true,
-        salaryTo: true,
-        Company: {
-          select: {
-            name: true,
-            logo: true,
-            location: true,
-            about: true,
-          },
-        },
-      },
-    }),
+    getCachedJob(jobId),
 
     userId
       ? prisma.savedJobPost.findUnique({
@@ -114,6 +120,26 @@ async function getJob(jobId: string, userId?: string) {
 
 type Params = Promise<{ jobId: string; userID?: string }>;
 
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { jobId } = await params;
+  const job = await getCachedJob(jobId);
+  if (!job) return { title: "Job Not Found" };
+
+  const title = `${job.jobTitle} at ${job.Company.name}`;
+  const description = `${job.employmentType} · ${job.location} · ${formatCurrency(job.salaryFrom)}–${formatCurrency(job.salaryTo)}. Apply now on Dream Jobs.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title, description,
+      type: "website",
+      images: job.Company.logo ? [{ url: job.Company.logo }] : [],
+    },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
+
 export default async function jobIdPage({ params }: { params: Params }) {
   const { jobId } = await params;
   const session = await auth();
@@ -132,13 +158,46 @@ export default async function jobIdPage({ params }: { params: Params }) {
 
   const locationFlag = getFlagImage(data.location);
   return (
-    <div className="grid lg:grid-cols-3 gap-8">
+    <article className="grid lg:grid-cols-3 gap-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "JobPosting",
+            title: data.jobTitle,
+            description: data.jobDescription,
+            datePosted: data.createdAt.toISOString(),
+            validThrough: new Date(data.createdAt.getTime() + data.listingDuration * 24 * 60 * 60 * 1000).toISOString(),
+            employmentType: data.employmentType,
+            hiringOrganization: {
+              "@type": "Organization",
+              name: data.Company.name,
+              logo: data.Company.logo,
+            },
+            jobLocation: {
+              "@type": "Place",
+              name: data.location,
+            },
+            baseSalary: {
+              "@type": "MonetaryAmount",
+              currency: "USD",
+              value: {
+                "@type": "QuantitativeValue",
+                minValue: data.salaryFrom,
+                maxValue: data.salaryTo,
+                unitText: "YEAR",
+              },
+            },
+          }),
+        }}
+      />
       <div className="space-y-8 col-span-2">
         {/* header */}
 
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xlfont-bold">{data?.jobTitle}</h1>
+            <h1 className="text-3xl font-bold">{data?.jobTitle}</h1>
 
             <div className="flex items-center mt-2 gap-2">
               <p className="font-medium">{data?.Company?.name}</p>
@@ -313,7 +372,7 @@ export default async function jobIdPage({ params }: { params: Params }) {
             <div className="flex items-center gap-3 ">
               <Image
                 src={data.Company.logo || ""}
-                alt="Company logo"
+                alt={`${data.Company.name} logo`}
                 width={48}
                 height={48}
                 className="rounded-full size-12"
@@ -329,6 +388,6 @@ export default async function jobIdPage({ params }: { params: Params }) {
           </div>
         </Card>
       </div>
-    </div>
+    </article>
   );
 }

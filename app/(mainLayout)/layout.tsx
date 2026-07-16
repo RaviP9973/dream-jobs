@@ -6,10 +6,10 @@ export default function MainLayout({ children }: { children: ReactNode }) {
 
     <>
       <Navbar />
-    <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pb-12">
+    <main className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 pb-12">
       
       {children}
-    </div>
+    </main>
     
     </>
   );

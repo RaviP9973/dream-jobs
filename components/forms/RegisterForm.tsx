@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "../ui/button";
@@ -24,6 +24,14 @@ export function RegisterForm() {
   const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    if (timeLeft > 0) {
+      const timerId = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+      return () => clearTimeout(timerId);
+    }
+  }, [timeLeft]);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,6 +48,7 @@ export function RegisterForm() {
         toast.error(data.error || "Failed to register");
       } else {
         toast.success("OTP sent to your email!");
+        setTimeLeft(60);
         setStep("otp");
       }
     } catch (error) {
@@ -146,9 +155,18 @@ export function RegisterForm() {
               </Button>
               <Button
                 type="button"
+                variant="outline"
+                disabled={timeLeft > 0 || loading}
+                onClick={handleRegister}
+                className="w-full"
+              >
+                {timeLeft > 0 ? `Resend OTP in ${timeLeft}s` : "Resend OTP"}
+              </Button>
+              <Button
+                type="button"
                 variant="ghost"
                 onClick={() => setStep("register")}
-                className="w-full text-sm"
+                className="w-full text-sm mt-2"
               >
                 Back
               </Button>

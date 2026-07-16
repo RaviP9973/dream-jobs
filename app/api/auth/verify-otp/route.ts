@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/utils/db";
+import { redis } from "@/app/utils/redis";
 
 export async function POST(req: Request) {
   try {
@@ -12,23 +13,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const verificationToken = await prisma.verificationToken.findFirst({
-      where: {
-        identifier: email,
-        token: otp,
-      },
-    });
+    const otpKey = `otp:${email}`;
+    const storedOtp = await redis.get(otpKey);
 
-    if (!verificationToken) {
+    if (!storedOtp || storedOtp !== otp) {
       return NextResponse.json(
-        { error: "Invalid OTP" },
-        { status: 400 }
-      );
-    }
-
-    if (verificationToken.expires < new Date()) {
-      return NextResponse.json(
-        { error: "OTP has expired" },
+        { error: "Invalid or expired OTP" },
         { status: 400 }
       );
     }
@@ -42,14 +32,7 @@ export async function POST(req: Request) {
     });
 
     // Delete the token
-    await prisma.verificationToken.delete({
-      where: {
-        identifier_token: {
-          identifier: email,
-          token: otp,
-        },
-      },
-    });
+    await redis.del(otpKey);
 
     return NextResponse.json({ message: "OTP verified successfully" });
   } catch (error) {

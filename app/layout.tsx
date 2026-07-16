@@ -15,8 +15,34 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Dream-Jobs",
-  description: "Online Job Portal for all your dream jobs",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_URL!),
+  title: {
+    default: "Dream Jobs — Find Your Dream Career",
+    template: "%s | Dream Jobs",
+  },
+  description:
+    "Discover thousands of job opportunities, build AI-powered resumes, and prepare for interviews. Your dream career starts here.",
+  keywords: [
+    "jobs", "job portal", "careers", "job search", "remote jobs",
+    "hiring", "employment", "resume builder", "interview prep",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: "Dream Jobs",
+    title: "Dream Jobs — Find Your Dream Career",
+    description: "Discover thousands of job opportunities, build AI-powered resumes, and prepare for interviews.",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Dream Jobs — Find Your Dream Career",
+    description: "Discover thousands of job opportunities, build AI-powered resumes, and prepare for interviews.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
+  },
   icons: {
     icon: "/logo.svg"
   }

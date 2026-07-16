@@ -2,6 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import Logo from "@/public/logo.svg";
 import { RegisterForm } from "@/components/forms/RegisterForm";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Create Account",
+};
 
 export default function Register() {
   return (

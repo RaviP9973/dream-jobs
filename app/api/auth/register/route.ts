@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/app/utils/db";
 import bcrypt from "bcryptjs";
 import { sendEmail } from "@/app/utils/mailsender";
+import { redis } from "@/app/utils/redis";
 
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
@@ -48,20 +49,23 @@ export async function POST(req: Request) {
       });
     }
 
-    // Delete existing token if any
-    await prisma.verificationToken.deleteMany({
-      where: { identifier: email },
-    });
+    // Rate Limiting: Check if OTP was sent in the last 60 seconds
+    const rateLimitKey = `ratelimit:otp:${email}`;
+    const otpKey = `otp:${email}`;
 
-    // Create new OTP token valid for 10 minutes
-    const expires = new Date(Date.now() + 10 * 60 * 1000);
-    await prisma.verificationToken.create({
-      data: {
-        identifier: email,
-        token: otp,
-        expires,
-      },
-    });
+    const isRateLimited = await redis.get(rateLimitKey);
+    if (isRateLimited) {
+      return NextResponse.json(
+        { error: "Please wait 60 seconds before requesting another OTP." },
+        { status: 429 }
+      );
+    }
+
+    // Store OTP in Redis valid for 10 minutes (600 seconds)
+    await redis.setEx(otpKey, 600, otp);
+
+    // Set rate limit for 60 seconds
+    await redis.setEx(rateLimitKey, 60, "true");
 
     // Send OTP via Nodemailer
     await sendEmail({

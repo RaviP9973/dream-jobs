@@ -4,6 +4,11 @@ import Logo from "@/public/logo.svg";
 import { LoginForm } from "@/components/forms/LoginForm";
 import { auth } from "@/app/utils/auth";
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Sign In",
+};
 
 export default async function Login() {
   const session = await auth();
