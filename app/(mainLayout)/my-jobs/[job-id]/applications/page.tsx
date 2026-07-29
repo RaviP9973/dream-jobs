@@ -88,6 +88,9 @@ export default async function JobApplicationsPage({
       )
     : 0;
 
+  
+  
+
   return (
     <div className="p-6 lg:p-10 space-y-6 max-w-7xl mx-auto">
       {/* Header section with Stats */}
@@ -354,37 +357,34 @@ export default async function JobApplicationsPage({
                       </Button>
                     </Link>
                     
-                    <form action={async (formData: FormData) => {
-                      "use server";
-                      const newStatus = formData.get("status") as ApplicationStatus;
-                      await updateApplicationStatus(app.id, newStatus, job.id, job.jobTitle, app.User.email as string);
-                    }}>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="default" className="flex-1 lg:w-full gap-2">
-                            Update Status
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-56">
-                          <DropdownMenuLabel>Change Application Status</DropdownMenuLabel>
-                          <DropdownMenuSeparator />
-                          {Object.entries(statusConfig).map(([s, config]) => (
-                            <DropdownMenuItem key={s} asChild>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="default" className="flex-1 lg:w-full gap-2">
+                          Update Status
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuLabel>Change Application Status</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {Object.entries(statusConfig).map(([s, config]) => (
+                          <form key={s} action={async () => {
+                            "use server";
+                            await updateApplicationStatus(app.id, s as ApplicationStatus, job.id, job.jobTitle, app.User.email as string);
+                          }}>
+                            <DropdownMenuItem asChild>
                               <button 
                                 type="submit" 
-                                name="status" 
-                                value={s}
-                                className="w-full cursor-pointer"
+                                className="w-full cursor-pointer flex items-center"
                               >
                                 <div className={`w-2 h-2 rounded-full ${config.color} mr-2`} />
                                 {config.label}
                               </button>
                             </DropdownMenuItem>
-                          ))}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </form>
+                          </form>
+                        ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>

@@ -205,9 +205,7 @@ export const sendPeriodicJobListing = inngest.createFunction(
 export const sendJobApplicationStatusUpdate = inngest.createFunction(
   {
     id: "send-application-status-update",
-    triggers: {
-      event: "application/status.updated",
-    }
+    triggers: [{ event: "application/status.updated" }],
   },
   // {
   //   event: "application/status.updated",
@@ -215,8 +213,8 @@ export const sendJobApplicationStatusUpdate = inngest.createFunction(
   async ({event, step}) => {
     const { applicationId,title, newStatus, emailId } = event.data;
     await step.run("send-status-update-email", async () => {
-      await sendEmail( {
-        to: "rp031776@gmail.com",
+      return await sendEmail( {
+        to: emailId,
         subject: "Your Job Application Status Update",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -235,9 +233,7 @@ export const sendJobApplicationStatusUpdate = inngest.createFunction(
 export const sendOtpEmail = inngest.createFunction(
   {
     id: "send-otp-email",
-    triggers: {
-      event: "otp.sent"
-    }
+    triggers: [{ event: "otp.sent" }],
   },
   async ({event, step}) => {
     const { emailId, otp } = event.data;

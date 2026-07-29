@@ -1,4 +1,3 @@
-import { saveJobPost, unsaveJobPost } from "@/app/actions";
 import arcjet, {
   detectBot,
   tokenBucket,
@@ -88,28 +87,28 @@ async function getJob(jobId: string, userId?: string) {
 
     userId
       ? prisma.savedJobPost.findUnique({
-          where: {
-            userId_jobPostId: {
-              userId: userId,
-              jobPostId: jobId,
-            },
+        where: {
+          userId_jobPostId: {
+            userId: userId,
+            jobPostId: jobId,
           },
-          select: {
-            id: true,
-          },
-        })
+        },
+        select: {
+          id: true,
+        },
+      })
       : null,
 
     userId
       ? prisma.jobseeker.findUnique({
-          where: { userId: userId },
-          select: {
-            id: true,
-            about: true,
-            resume: true,
-            name: true,
-          },
-        })
+        where: { userId: userId },
+        select: {
+          id: true,
+          about: true,
+          resume: true,
+          name: true,
+        },
+      })
       : null,
   ]);
 
@@ -231,10 +230,10 @@ export default async function jobIdPage({ params }: { params: Params }) {
           </div>
 
           {session?.user ? (
-            <SaveJobButton 
-              savedJob={!!savedJob} 
-              jobId={jobId} 
-              savedJobId={savedJob?.id} 
+            <SaveJobButton
+              savedJob={!!savedJob}
+              jobId={jobId}
+              savedJobId={savedJob?.id}
             />
           ) : (
             <Link
@@ -322,7 +321,7 @@ export default async function jobIdPage({ params }: { params: Params }) {
               <span className="text-sm ">
                 {new Date(
                   data.createdAt.getTime() +
-                    data.listingDuration * 24 * 60 * 60 * 1000
+                  data.listingDuration * 24 * 60 * 60 * 1000
                 ).toLocaleDateString("en-Us", {
                   month: "long",
                   day: "numeric",

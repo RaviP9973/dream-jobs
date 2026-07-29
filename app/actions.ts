@@ -18,7 +18,7 @@ import { ApplicationStatus } from "@prisma/client";
 export async function createCompany(data: z.infer<typeof companySchema>) {
   const session = await requireUser();
 
-  
+
   const validateData = companySchema.parse(data);
 
   await prisma.user.update({
@@ -40,7 +40,7 @@ export async function createCompany(data: z.infer<typeof companySchema>) {
 export async function createJobSeeker(data: z.infer<typeof jobseekerSchema>) {
   const user = await requireUser();
 
-  
+
 
   const validateData = jobseekerSchema.parse(data);
 
@@ -58,12 +58,12 @@ export async function createJobSeeker(data: z.infer<typeof jobseekerSchema>) {
   });
 
   // Trigger the background job to send periodic listings
-    await inngest.send({
-      name: "jobseeker/created",
-      data: {
-        userId: user.id,
-      },
-    });
+  await inngest.send({
+    name: "jobseeker/created",
+    data: {
+      userId: user.id,
+    },
+  });
 
   return redirect("/");
 }
@@ -71,7 +71,7 @@ export async function createJobSeeker(data: z.infer<typeof jobseekerSchema>) {
 export async function createJob(data: z.infer<typeof jobSchema>) {
   const user = await requireUser();
 
-  
+
 
   // Create job logic here
   const validateData = jobSchema.parse(data);
@@ -179,7 +179,7 @@ export async function saveJobPost(jobId: string) {
 
 
 
-  await prisma.savedJobPost.create( {
+  await prisma.savedJobPost.create({
     data: {
       userId: user.id as string,
       jobPostId: jobId,
@@ -194,7 +194,7 @@ export async function unsaveJobPost(savedJobPostId: string) {
 
 
 
-  const data = await prisma.savedJobPost.delete( {
+  const data = await prisma.savedJobPost.delete({
     where: {
       id: savedJobPostId,
       userId: user.id as string,
@@ -214,7 +214,7 @@ export async function editJobPost(data: z.infer<typeof jobSchema>, jobId: string
 
 
 
-  await prisma.jobPost.update( {
+  await prisma.jobPost.update({
     where: {
       id: jobId,
       Company: {
@@ -240,7 +240,7 @@ export async function editJobPost(data: z.infer<typeof jobSchema>, jobId: string
 export async function updateJobseekerResume(resumeUrl: string, oldResumeUrl?: string) {
   const user = await requireUser();
 
-  
+
 
   // Update the jobseeker's resume
   await prisma.jobseeker.update({
@@ -261,7 +261,7 @@ export async function updateJobseekerResume(resumeUrl: string, oldResumeUrl?: st
 export async function updateJobseekerProfile(data: z.infer<typeof jobseekerProfileSchema>) {
   const user = await requireUser();
 
-  
+
 
   const validateData = jobseekerProfileSchema.parse(data);
 
@@ -311,7 +311,7 @@ export async function updateJobseekerProfile(data: z.infer<typeof jobseekerProfi
 export async function applyToJob(data: z.infer<typeof applicationSchema>) {
   const user = await requireUser();
 
-  
+
 
   const validateData = applicationSchema.parse(data);
 
@@ -366,15 +366,15 @@ export async function applyToJob(data: z.infer<typeof applicationSchema>) {
   });
 
   // Trigger background job to calculate AI resume score
-    await inngest.send({
-      name: "application/created",
-      data: {
-        applicationId: application.id,
-        userId: user.id as string,
-        jobPostId: validateData.jobPostId,
-        resumeUrl: validateData.resume,
-      },
-    });
+  await inngest.send({
+    name: "application/created",
+    data: {
+      applicationId: application.id,
+      userId: user.id as string,
+      jobPostId: validateData.jobPostId,
+      resumeUrl: validateData.resume,
+    },
+  });
 
   // Increment application count on job post
   await prisma.jobPost.update({
@@ -396,7 +396,7 @@ export async function deleteJobPost(jobId: string) {
 
 
 
-  await prisma.jobPost.delete( {
+  await prisma.jobPost.delete({
     where: {
       id: jobId,
       Company: {
@@ -405,7 +405,7 @@ export async function deleteJobPost(jobId: string) {
     }
   })
 
-  await inngest.send( {
+  await inngest.send({
     name: "job/cancel.expiration",
     data: {
       jobId: jobId,
@@ -418,7 +418,7 @@ export async function deleteJobPost(jobId: string) {
 export async function markApplicationAsReviewed(applicationId: string, status: string) {
   const user = await requireUser();
 
-  
+
 
   // Update the application status to IN_REVIEW
   await prisma.jobApplication.update({
@@ -435,7 +435,7 @@ export async function markApplicationAsReviewed(applicationId: string, status: s
 
 
 export async function updateApplicationStatus(
-  applicationId: string, 
+  applicationId: string,
   newStatus: ApplicationStatus,
   jobId: string,
   jobTitle: string,
@@ -448,19 +448,19 @@ export async function updateApplicationStatus(
     });
 
     // send email notification to applicant about status change
-      await inngest.send( {
-        name: "application/status.updated",
-        data: {
-          applicationId,
-          newStatus,
-          title: jobTitle,
-          emailId: emailId,
-        }
+    await inngest.send({
+      name: "application/status.updated",
+      data: {
+        applicationId,
+        newStatus,
+        title: jobTitle,
+        emailId: emailId,
+      }
     })
 
     // Refresh the page data without a full reload
     revalidatePath(`/dashboard/jobs/${jobId}/applications`);
-    
+
     return { success: true };
   } catch (error) {
     return { success: false, error: "Failed to update status" };
