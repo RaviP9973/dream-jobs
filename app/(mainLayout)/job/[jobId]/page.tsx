@@ -82,7 +82,7 @@ const getCachedJob = cache(async (jobId: string) => {
 
 async function getJob(jobId: string, userId?: string) {
   console.log("userId", userId);
-  const [jobData, savedJob, jobseeker] = await Promise.all([
+  const [jobData, savedJob, jobseeker, existingApplication] = await Promise.all([
     getCachedJob(jobId),
 
     userId
@@ -110,11 +110,26 @@ async function getJob(jobId: string, userId?: string) {
         },
       })
       : null,
+
+    userId
+      ? prisma.jobApplication.findUnique({
+        where: {
+          userId_jobPostId: {
+            userId: userId,
+            jobPostId: jobId,
+          },
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      })
+      : null,
   ]);
 
   if (!jobData) return notFound();
 
-  return { jobData, savedJob, jobseeker };
+  return { jobData, savedJob, jobseeker, existingApplication };
 }
 
 type Params = Promise<{ jobId: string; userID?: string }>;
@@ -153,6 +168,7 @@ export default async function jobIdPage({ params }: { params: Params }) {
     jobData: data,
     savedJob,
     jobseeker,
+    existingApplication,
   } = await getJob(jobId, session?.user?.id);
 
   const locationFlag = getFlagImage(data.location);
@@ -294,13 +310,25 @@ export default async function jobIdPage({ params }: { params: Params }) {
             </div>
 
             {/* Jobseeker Details & Resume */}
-            {session?.user && jobseeker && (
+            {session?.user && jobseeker && !existingApplication && (
               <ResumeUploadSection
                 currentResume={jobseeker.resume}
                 jobseekerName={jobseeker.name || ""}
                 userEmail={session.user.email || ""}
                 jobId={jobId}
               />
+            )}
+
+            {session?.user && existingApplication && (
+              <div className="border rounded-lg p-4 bg-muted/50 space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  <p className="text-sm font-medium">You have already applied to this job</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Current status: <span className="font-medium capitalize">{existingApplication.status.toLowerCase().replace("_", " ")}</span>
+                </p>
+              </div>
             )}
 
             {!session?.user && (

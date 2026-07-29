@@ -334,7 +334,7 @@ export async function applyToJob(data: z.infer<typeof applicationSchema>) {
   });
 
   if (existingApplication) {
-    throw new Error("You have already applied to this job");
+    return { error: "You have already applied to this job" };
   }
 
   // Fetch job details for scoring

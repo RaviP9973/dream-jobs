@@ -66,7 +66,11 @@ export function ResumeUploadSection({
 
   async function onSubmit(data: z.infer<typeof applicationSchema>) {
     try {
-      await applyToJob(data);
+      const result = await applyToJob(data);
+      if (result && 'error' in result) {
+        toast.error(result.error);
+        return;
+      }
       toast.success("Application submitted successfully!");
       router.refresh();
     } catch (error: any) {
