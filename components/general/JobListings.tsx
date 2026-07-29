@@ -6,7 +6,7 @@ import { JobPostStatus } from "@prisma/client";
 
 async function getData({
   page = 1,
-  pageSize = 2,
+  pageSize = 10,
   jobTypes = [],
   location = "",
 }: {
@@ -76,7 +76,7 @@ export default async function JobListings({
 }) {
   const data = await getData({
     page: currentPage,
-    pageSize: 2,
+    pageSize: 10,
     jobTypes: jobTypes,
     location: location,
   });
